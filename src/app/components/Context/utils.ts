@@ -7,54 +7,142 @@ export async function crawlDocument(
   setCards: React.Dispatch<React.SetStateAction<ICard[]>>,
   splittingMethod: string,
   chunkSize: number,
-  overlap: number
+  overlap: number,
+  showToast?: (message: string, type: 'success' | 'error' | 'info' | 'warning', duration?: number) => void
 ): Promise<void> {
+  // Set loading state
   setEntries((seeded: IUrlEntry[]) =>
     seeded.map((seed: IUrlEntry) =>
       seed.url === url ? { ...seed, loading: true } : seed
     )
   );
-  const response = await fetch("/api/crawl", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      url,
-      options: {
-        splittingMethod,
-        chunkSize,
-        overlap,
-      },
-    }),
-  });
 
-  const { documents } = await response.json();
+  try {
+    const response = await fetch("/api/crawl", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        url,
+        options: {
+          splittingMethod,
+          chunkSize,
+          overlap,
+        },
+      }),
+    });
 
-  setCards(documents);
+    if (!response.ok) {
+      throw new Error(`Server responded with status ${response.status}`);
+    }
 
-  setEntries((prevEntries: IUrlEntry[]) =>
-    prevEntries.map((entry: IUrlEntry) =>
-      entry.url === url ? { ...entry, seeded: true, loading: false } : entry
-    )
-  );
+    const { documents } = await response.json();
+
+    if (documents && documents.length > 0) {
+      setCards(documents);
+      
+      // Mark as seeded
+      setEntries((prevEntries: IUrlEntry[]) =>
+        prevEntries.map((entry: IUrlEntry) =>
+          entry.url === url ? { ...entry, seeded: true, loading: false } : entry
+        )
+      );
+
+      if (showToast) {
+        showToast('Successfully crawled website content', 'success');
+      }
+    } else {
+      // Reset loading state
+      setEntries((prevEntries: IUrlEntry[]) =>
+        prevEntries.map((entry: IUrlEntry) =>
+          entry.url === url ? { ...entry, loading: false } : entry
+        )
+      );
+
+      const message = 'No content could be extracted from this URL. The website might be empty or blocked.';
+      if (showToast) {
+        showToast(message, 'warning');
+      } else {
+        console.warn(message);
+      }
+    }
+  } catch (error) {
+    console.error('Web crawl error:', error);
+    
+    // Reset loading state
+    setEntries((prevEntries: IUrlEntry[]) =>
+      prevEntries.map((entry: IUrlEntry) =>
+        entry.url === url ? { ...entry, loading: false } : entry
+      )
+    );
+
+    // Provide more specific error messages
+    let errorMessage = 'Failed to crawl website. Please check the URL and try again.';
+    if (error.message.includes('Failed to fetch')) {
+      errorMessage = 'Connection failed. Please check your internet connection and try again.';
+    } else if (error.message.includes('404')) {
+      errorMessage = 'Website not found. Please check if the URL is correct.';
+    } else if (error.message.includes('403') || error.message.includes('401')) {
+      errorMessage = 'Access denied. The website may be protected or require authentication.';
+    } else if (error.message.includes('500')) {
+      errorMessage = 'Server error occurred. Please try again in a moment.';
+    } else if (error.message.includes('timeout')) {
+      errorMessage = 'Request timed out. The website may be slow to respond.';
+    }
+
+    if (showToast) {
+      showToast(errorMessage, 'error');
+    } else {
+      // Fallback to console.error if no toast function provided
+      console.error(errorMessage);
+      // Show a basic alert as last resort for debugging
+      alert(errorMessage);
+    }
+  }
 }
 
 export async function clearIndex(
   setEntries: React.Dispatch<React.SetStateAction<IUrlEntry[]>>,
-  setCards: React.Dispatch<React.SetStateAction<ICard[]>>
+  setCards: React.Dispatch<React.SetStateAction<ICard[]>>,
+  setStatusMessage?: (message: string) => void
 ) {
-  const response = await fetch("/api/clearIndex", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-  });
+  try {
+    const response = await fetch("/api/clearIndex", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
 
-  if (response.ok) {
-    setEntries((prevEntries: IUrlEntry[]) =>
-      prevEntries.map((entry: IUrlEntry) => ({
-        ...entry,
-        seeded: false,
-        loading: false,
-      }))
-    );
-    setCards([]);
+    const result = await response.json();
+
+    if (response.ok) {
+      setEntries((prevEntries: IUrlEntry[]) =>
+        prevEntries.map((entry: IUrlEntry) => ({
+          ...entry,
+          seeded: false,
+          loading: false,
+        }))
+      );
+      setCards([]);
+      
+      // Show friendly status message
+      if (setStatusMessage) {
+        if (result.message?.includes('PDF: false') && result.message?.includes('Default: false')) {
+          setStatusMessage('Documents already cleared');
+        } else {
+          setStatusMessage('Documents cleared successfully');
+        }
+      }
+      
+      console.log('Documents cleared:', result.message);
+    } else {
+      console.error('Failed to clear documents:', result.error);
+      if (setStatusMessage) {
+        setStatusMessage('Unable to clear documents');
+      }
+    }
+  } catch (error) {
+    console.error('Error clearing documents:', error);
+    if (setStatusMessage) {
+      setStatusMessage('Connection error occurred');
+    }
   }
 }

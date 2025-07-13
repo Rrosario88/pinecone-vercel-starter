@@ -23,23 +23,22 @@ const UrlButton: FC<IURLButtonProps> = ({ entry, onClick }) => (
     <Button
       className={`relative overflow-hidden w-full my-1 lg:my-2 mx-2 ${
         entry.loading ? "shimmer" : ""
+      } ${
+        entry.seeded 
+          ? "bg-green-600 hover:bg-green-500 text-white" 
+          : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100"
       }`}
-      style={{
-        backgroundColor: entry.seeded ? "green" : "bg-gray-800",
-        color: entry.seeded ? "white" : "text-gray-200",
-      }}
       onClick={onClick}
     >
       <a
         href={entry.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="bg-blue-500 hover:bg-blue-600 active:bg-brand-700 dark:bg-brand-400 dark:hover:bg-brand-300 dark:active:bg-brand-200 flex items-center justify-center rounded-full p-2 text-3xl text-white transition duration-200 hover:cursor-pointer dark:text-white"
+        className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-500 flex items-center justify-center rounded-full p-2 text-white transition duration-200 hover:cursor-pointer"
       >
         <AiOutlineLink
-          color="white"
           fontSize={14}
-          className="hover:text-green"
+          className="text-white"
         />
       </a>
       {entry.loading && (
@@ -48,7 +47,7 @@ const UrlButton: FC<IURLButtonProps> = ({ entry, onClick }) => (
           style={{
             zIndex: -1,
             background:
-              "linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)",
+              "linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent)",
             animation: "shimmer 2s infinite",
           }}
         ></div>

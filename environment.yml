@@ -1,0 +1,11 @@
+name: pinecone-vercel-starter
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - nodejs=20.17.0
+  - npm=10.8.2
+  - python=3.11
+  - pip
+  - pip:
+    - playwright==1.47.1

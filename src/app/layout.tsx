@@ -1,9 +1,10 @@
 export const metadata = {
-  title: "Pinecone - Vercel AI SDK Example",
-  description: "Pinecone - Vercel AI SDK Example",
+  title: "PDF RAG - Pinecone AI Assistant",
+  description: "Intelligent PDF document analysis powered by Pinecone and OpenAI",
 };
 
 import "../global.css";
+import { ThemeProvider } from '@/context/ThemeContext';
 
 export default function RootLayout({
   children,
@@ -12,7 +13,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   );
 }
