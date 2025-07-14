@@ -216,7 +216,7 @@ export const Context: React.FC<ContextProps> = ({
           <button
             className="group relative w-full py-2.5 px-4 rounded-lg font-medium text-gray-700 dark:text-gray-300 bg-gray-100/80 dark:bg-gray-700/80 border border-gray-300/50 dark:border-gray-600/50 backdrop-blur-sm transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 hover:bg-gray-200/80 dark:hover:bg-gray-600/80"
             onClick={async () => {
-              await clearIndex(setUrlEntries, setDocumentCards, setStatusMessage);
+              await clearIndex(setUrlEntries, setDocumentCards, setStatusMessage, showToast);
               setClearTrigger(prev => prev + 1); // Trigger clear in PDFUpload
             }}
           >

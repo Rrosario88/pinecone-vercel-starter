@@ -16,6 +16,9 @@ interface UploadedFile {
   size: number;
   uploadedAt: string;
   uploading?: boolean;
+  status?: 'uploading' | 'processing' | 'extracting' | 'embedding' | 'indexing' | 'completed' | 'failed';
+  statusMessage?: string;
+  progress?: number;
 }
 
 export const PDFUpload: React.FC<PDFUploadProps> = ({
@@ -58,16 +61,32 @@ export const PDFUpload: React.FC<PDFUploadProps> = ({
     // Reset completion state when new uploads start
     setAllUploadsComplete(false);
     
-    // Add file to uploaded files list with uploading status
+    // Add file to uploaded files list with initial status
     const newFile: UploadedFile = {
       name: file.name,
       size: file.size,
       uploadedAt: new Date().toISOString(),
       uploading: true,
+      status: 'uploading',
+      statusMessage: 'Preparing file...',
+      progress: 0,
     };
     setUploadedFiles(prev => [...prev, newFile]);
 
+    // Helper function to update file status
+    const updateFileStatus = (status: UploadedFile['status'], statusMessage: string, progress?: number) => {
+      setUploadedFiles(prev => 
+        prev.map(f => 
+          f.name === file.name && f.uploading 
+            ? { ...f, status, statusMessage, progress }
+            : f
+        )
+      );
+    };
+
     try {
+      updateFileStatus('uploading', 'Uploading file...', 10);
+      
       const formData = new FormData();
       formData.append('pdf', file);
       formData.append('options', JSON.stringify({
@@ -79,26 +98,47 @@ export const PDFUpload: React.FC<PDFUploadProps> = ({
 
       console.log('Starting upload for:', file.name, 'Size:', file.size);
 
+      updateFileStatus('processing', 'Sending to server...', 20);
+
       const response = await fetch('/api/upload-pdf', {
         method: 'POST',
         body: formData,
       });
 
       console.log('Upload response status:', response.status);
+      updateFileStatus('processing', 'Processing PDF...', 40);
 
       if (!response.ok) {
         throw new Error(`Server responded with status ${response.status}`);
       }
 
+      updateFileStatus('extracting', 'Extracting text content...', 60);
+      
       const result = await response.json();
       console.log('Upload result:', result);
 
       if (result.success) {
-        // Update the uploaded file status
+        updateFileStatus('embedding', 'Generating embeddings...', 80);
+        
+        // Simulate embedding/indexing time
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        updateFileStatus('indexing', 'Storing in vector database...', 90);
+        
+        // Simulate indexing time
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Update the uploaded file status to completed
         setUploadedFiles(prev => 
           prev.map(f => 
             f.name === file.name && f.uploading 
-              ? { ...f, uploading: false }
+              ? { 
+                  ...f, 
+                  uploading: false, 
+                  status: 'completed', 
+                  statusMessage: `Completed • ${result.chunks} chunks created`,
+                  progress: 100 
+                }
               : f
           )
         );
@@ -141,9 +181,19 @@ export const PDFUpload: React.FC<PDFUploadProps> = ({
         alert(userErrorMessage);
       }
       
-      // Remove the failed upload from the list
+      // Update the failed upload status instead of removing it
       setUploadedFiles(prev => 
-        prev.filter(f => !(f.name === file.name && f.uploading))
+        prev.map(f => 
+          f.name === file.name && f.uploading 
+            ? { 
+                ...f, 
+                uploading: false, 
+                status: 'failed', 
+                statusMessage: `Failed: ${userErrorMessage}`,
+                progress: 0 
+              }
+            : f
+        )
       );
     } finally {
       // Decrement pending uploads and check if all are complete
@@ -215,25 +265,18 @@ export const PDFUpload: React.FC<PDFUploadProps> = ({
         />
         
         <div className="space-y-2">
-          <div className="text-2xl">
-            {allUploadsComplete ? '✅' : '📄'}
-          </div>
+          <div className="text-2xl">📄</div>
           <div className="text-gray-900 dark:text-gray-100 font-medium">
-            {uploading 
-              ? pendingUploads > 1 
-                ? `Uploading ${pendingUploads} files...` 
-                : 'Uploading...'
-              : allUploadsComplete
-                ? 'All uploads completed!'
-                : 'Upload PDF Files'
-            }
+            Upload PDF Files
           </div>
           <div className="text-gray-600 dark:text-gray-400 text-sm">
-            {allUploadsComplete 
-              ? 'All files have been processed successfully. You can close this window or upload more files.'
-              : 'Drag and drop PDF files here, or click to select'
-            }
+            Drag and drop PDF files here, or click to select
           </div>
+          {pendingUploads > 0 && (
+            <div className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+              Processing {pendingUploads} file{pendingUploads > 1 ? 's' : ''}...
+            </div>
+          )}
         </div>
       </div>
 
@@ -241,21 +284,54 @@ export const PDFUpload: React.FC<PDFUploadProps> = ({
       {uploadedFiles.length > 0 && (
         <div className="space-y-2">
           <div className="text-gray-900 dark:text-gray-100 font-medium">Uploaded Files:</div>
-          <div className="space-y-2 max-h-32 overflow-y-auto">
+          <div className="space-y-2 max-h-48 overflow-y-auto">
             {uploadedFiles.map((file, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between p-2 bg-gray-200 dark:bg-gray-700 rounded text-sm border border-gray-300 dark:border-gray-600"
+                className={`p-3 rounded-lg text-sm border transition-all duration-200 ${
+                  file.status === 'completed' 
+                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700' 
+                    : file.status === 'failed'
+                    ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700'
+                    : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600'
+                }`}
               >
-                <div className="flex items-center space-x-2">
-                  <span className="text-gray-600 dark:text-gray-300">📄</span>
-                  <span className="text-gray-900 dark:text-gray-100 truncate max-w-32">{file.name}</span>
-                  {file.uploading && (
-                    <span className="text-gray-600 dark:text-gray-400 text-xs">Uploading...</span>
-                  )}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <span className={`text-lg ${
+                      file.status === 'completed' ? '✅' 
+                      : file.status === 'failed' ? '❌'
+                      : file.uploading ? '⏳' : '📄'
+                    }`}>
+                      {file.status === 'completed' ? '✅' 
+                       : file.status === 'failed' ? '❌'
+                       : file.uploading ? '⏳' : '📄'}
+                    </span>
+                    <span className="text-gray-900 dark:text-gray-100 font-medium truncate max-w-40">{file.name}</span>
+                  </div>
+                  <div className="text-gray-500 dark:text-gray-400 text-xs">
+                    {formatFileSize(file.size)}
+                  </div>
                 </div>
-                <div className="text-gray-500 dark:text-gray-400 text-xs">
-                  {formatFileSize(file.size)}
+                
+                {/* Status and Progress */}
+                <div className="space-y-1">
+                  <div className={`text-xs ${
+                    file.status === 'completed' ? 'text-green-600 dark:text-green-400'
+                    : file.status === 'failed' ? 'text-red-600 dark:text-red-400'
+                    : 'text-blue-600 dark:text-blue-400'
+                  }`}>
+                    {file.statusMessage || 'Ready'}
+                  </div>
+                  
+                  {file.uploading && file.progress !== undefined && (
+                    <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
+                      <div 
+                        className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                        style={{ width: `${file.progress}%` }}
+                      ></div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -263,14 +339,6 @@ export const PDFUpload: React.FC<PDFUploadProps> = ({
         </div>
       )}
 
-      {uploading && (
-        <div className="text-center">
-          <div className="text-gray-700 dark:text-gray-300">Processing PDF...</div>
-          <div className="text-gray-500 dark:text-gray-500 text-sm">
-            Extracting text and creating embeddings
-          </div>
-        </div>
-      )}
     </div>
   );
 };

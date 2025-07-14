@@ -13,13 +13,17 @@ export const PDFDocument: FC<IPDFDocumentProps> = ({ filename, chunks, selected,
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleToggleChunks = () => {
+    console.log('Toggle clicked, expanding:', !isExpanded);
     setIsExpanded(!isExpanded);
   };
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
+    console.log('Delete clicked for:', filename);
     if (onDelete) {
       onDelete(filename);
+    } else {
+      console.log('No onDelete handler provided');
     }
   };
 

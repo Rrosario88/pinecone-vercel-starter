@@ -120,7 +120,8 @@ export async function crawlDocument(
 export async function clearIndex(
   setEntries: React.Dispatch<React.SetStateAction<IUrlEntry[]>>,
   setCards: React.Dispatch<React.SetStateAction<ICard[]>>,
-  setStatusMessage?: (message: string) => void
+  setStatusMessage?: (message: string) => void,
+  showToast?: (message: string, type: 'success' | 'error' | 'info' | 'warning', duration?: number) => void
 ) {
   try {
     const response = await fetch("/api/clearIndex", {
@@ -140,8 +141,15 @@ export async function clearIndex(
       );
       setCards([]);
       
-      // Show friendly status message
-      if (setStatusMessage) {
+      // Show friendly toast notification
+      if (showToast) {
+        if (result.message?.includes('PDF: false') && result.message?.includes('Default: false')) {
+          showToast('Documents already cleared', 'info');
+        } else {
+          showToast('Documents cleared successfully', 'success');
+        }
+      } else if (setStatusMessage) {
+        // Fallback to status message if toast not available
         if (result.message?.includes('PDF: false') && result.message?.includes('Default: false')) {
           setStatusMessage('Documents already cleared');
         } else {
@@ -152,13 +160,17 @@ export async function clearIndex(
       console.log('Documents cleared:', result.message);
     } else {
       console.error('Failed to clear documents:', result.error);
-      if (setStatusMessage) {
+      if (showToast) {
+        showToast('Unable to clear documents', 'error');
+      } else if (setStatusMessage) {
         setStatusMessage('Unable to clear documents');
       }
     }
   } catch (error) {
     console.error('Error clearing documents:', error);
-    if (setStatusMessage) {
+    if (showToast) {
+      showToast('Connection error occurred', 'error');
+    } else if (setStatusMessage) {
       setStatusMessage('Connection error occurred');
     }
   }
