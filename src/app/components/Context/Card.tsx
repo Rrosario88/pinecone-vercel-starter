@@ -38,17 +38,17 @@ export const Card: FC<ICardProps> = ({ card, selected }) => {
           <div className="flex flex-col">
             {isPDF ? (
               <>
-                <span className="text-blue-300 font-medium">
+                <span className="text-blue-300 font-medium select-text cursor-text">
                   {card.metadata.filename}
                 </span>
                 {card.metadata.pageNumber && (
-                  <span className="text-gray-400 text-xs">
+                  <span className="text-gray-400 text-xs select-text cursor-text">
                     Page {card.metadata.pageNumber}
                   </span>
                 )}
               </>
             ) : (
-              <span className="text-blue-300 font-medium">
+              <span className="text-blue-300 font-medium select-text cursor-text">
                 {card.metadata.url}
               </span>
             )}
@@ -57,11 +57,13 @@ export const Card: FC<ICardProps> = ({ card, selected }) => {
       </div>
       
       {/* Content */}
-      <ReactMarkdown>{card.pageContent}</ReactMarkdown>
+      <div className="select-text cursor-text">
+        <ReactMarkdown>{card.pageContent}</ReactMarkdown>
+      </div>
       
       {/* Hash */}
       <div className="mt-3 pt-2 border-t border-gray-600">
-        <b className="text-xs text-gray-500">{card.metadata.hash}</b>
+        <b className="text-xs text-gray-500 select-text cursor-text">{card.metadata.hash}</b>
       </div>
     </div>
   );

@@ -1,6 +1,8 @@
 import React, { ChangeEvent, useCallback, useEffect, useState } from "react";
 import UrlButton, { IUrlEntry } from "./UrlButton";
 import { Card, ICard } from "./Card";
+import { PDFDocument } from "./PDFDocument";
+import { WebDocument } from "./WebDocument";
 import { clearIndex, crawlDocument } from "./utils";
 import { Button } from "./Button";
 import { useToast } from "../Toast";
@@ -115,12 +117,56 @@ export const Context: React.FC<ContextProps> = ({
       {/* Scrollable Cards Section */}
       <div className="flex-1 overflow-y-auto">
         <div className="p-4 space-y-4">
-          {documentCards &&
-            documentCards.map((card, key) => (
-              <div key={key} className="w-full">
-                <Card card={card} selected={selected} />
-              </div>
-            ))}
+          {(() => {
+            // Group documents by type and filename+uploadId/URL
+            const pdfGroups: { [groupKey: string]: ICard[] } = {};
+            const webGroups: { [url: string]: ICard[] } = {};
+            
+            documentCards.forEach(card => {
+              if (card.metadata.type === 'pdf' && card.metadata.filename) {
+                // Create unique group key using filename and uploadId
+                const groupKey = `${card.metadata.filename}_${card.metadata.uploadId || 'legacy'}`;
+                if (!pdfGroups[groupKey]) {
+                  pdfGroups[groupKey] = [];
+                }
+                pdfGroups[groupKey].push(card);
+              } else if (card.metadata.url) {
+                if (!webGroups[card.metadata.url]) {
+                  webGroups[card.metadata.url] = [];
+                }
+                webGroups[card.metadata.url].push(card);
+              }
+            });
+
+            return (
+              <>
+                {/* PDF Documents */}
+                {Object.entries(pdfGroups).map(([groupKey, chunks]) => {
+                  // Extract actual filename from groupKey (remove uploadId suffix)
+                  const actualFilename = chunks[0]?.metadata?.filename || groupKey.split('_')[0];
+                  return (
+                    <PDFDocument
+                      key={groupKey}
+                      filename={actualFilename}
+                      chunks={chunks}
+                      selected={selected}
+                    />
+                  );
+                })}
+                
+                {/* Web Documents */}
+                {Object.entries(webGroups).map(([url, chunks]) => (
+                  <WebDocument
+                    key={url}
+                    url={url}
+                    chunks={chunks}
+                    selected={selected}
+                  />
+                ))}
+              </>
+            );
+          })()}
+          
           {documentCards.length === 0 && (
             <div className="text-center py-8">
               <div className="text-gray-500 dark:text-gray-400 text-sm">

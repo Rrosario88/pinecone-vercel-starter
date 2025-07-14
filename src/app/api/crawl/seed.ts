@@ -54,8 +54,59 @@ async function seed(url: string, limit: number, indexName: string, cloudName: Se
 
     const index = pinecone.Index(indexName)
 
+    // Check for existing content from this URL
+    const flatDocuments = documents.flat();
+    console.log(`Processing ${flatDocuments.length} documents for URL: ${url}`);
+    
+    // Check if content from this URL already exists
+    try {
+      const existingQuery = await index.query({
+        vector: new Array(1536).fill(0), // Dummy vector for metadata filtering
+        filter: { url: url },
+        topK: 1,
+        includeMetadata: true
+      });
+
+      if (existingQuery.matches && existingQuery.matches.length > 0) {
+        console.log(`URL ${url} already exists in index with ${existingQuery.matches.length} existing chunks`);
+        
+        // Get existing hashes to avoid re-processing identical content
+        const existingHashQuery = await index.query({
+          vector: new Array(1536).fill(0),
+          filter: { url: url },
+          topK: 10000, // Get all existing chunks for this URL
+          includeMetadata: true
+        });
+        
+        const existingHashes = new Set(
+          existingHashQuery.matches?.map(match => match.metadata?.hash).filter(Boolean) || []
+        );
+        
+        // Filter out documents that already exist
+        const newDocuments = flatDocuments.filter(doc => {
+          const hash = md5(doc.pageContent);
+          return !existingHashes.has(hash);
+        });
+        
+        if (newDocuments.length === 0) {
+          console.log(`All content from ${url} already exists in index. Skipping embedding.`);
+          return flatDocuments; // Return existing documents without re-embedding
+        }
+        
+        console.log(`Found ${newDocuments.length} new documents out of ${flatDocuments.length} total for ${url}`);
+        
+        // Only embed new documents
+        const vectors = await Promise.all(newDocuments.map(embedDocument));
+        await chunkedUpsert(index!, vectors, '', 10);
+        
+        return flatDocuments; // Return all documents (existing + new)
+      }
+    } catch (queryError) {
+      console.log(`No existing content found for ${url}, proceeding with full embedding`);
+    }
+
     // Get the vector embeddings for the documents
-    const vectors = await Promise.all(documents.flat().map(embedDocument));
+    const vectors = await Promise.all(flatDocuments.map(embedDocument));
 
     // Upsert vectors into the Pinecone index
     await chunkedUpsert(index!, vectors, '', 10);

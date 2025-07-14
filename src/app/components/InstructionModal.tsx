@@ -17,9 +17,10 @@ const InstructionModal: React.FC<InstructionModalProps> = ({
       <div className="bg-white dark:bg-gray-800 p-6 z-50 rounded-2xl shadow-2xl relative w-full max-w-2xl border border-gray-200 dark:border-gray-700 transition-colors duration-200">
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 text-2xl text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+          className="group relative absolute right-4 top-4 text-2xl text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
         >
-          &times;
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded"></div>
+          <span className="relative">&times;</span>
         </button>
         <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">PDF RAG Assistant</h2>
         

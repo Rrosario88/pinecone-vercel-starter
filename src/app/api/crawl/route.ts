@@ -2,8 +2,6 @@ import seed from './seed'
 import { NextResponse } from 'next/server';
 import { ServerlessSpecCloudEnum } from '@pinecone-database/pinecone'
 
-export const runtime = 'edge'
-
 export async function POST(req: Request) {
 
   const { url, options } = await req.json()

@@ -37,10 +37,11 @@ export function SideMenu({
       {/* Menu Button */}
       <button
         onClick={toggleMenu}
-        className="fixed top-4 right-4 z-50 p-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-full shadow-lg border border-gray-200/50 dark:border-gray-700/50 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all duration-200 hover:scale-105 active:scale-95"
+        className="group fixed top-4 right-4 z-50 p-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-full shadow-lg border border-gray-200/50 dark:border-gray-700/50 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
         title="Settings"
       >
-        <Settings size={20} className="transition-transform duration-200" />
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md rounded-full"></div>
+        <Settings size={20} className="relative transition-transform duration-200" />
       </button>
 
       {/* Overlay */}
@@ -84,9 +85,10 @@ export function SideMenu({
             
             <button
               onClick={toggleMenu}
-              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="group relative transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
             >
-              <X size={20} />
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg"></div>
+              <X size={20} className="relative text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" />
             </button>
           </div>
         </div>

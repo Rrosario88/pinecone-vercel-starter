@@ -1,0 +1,23 @@
+
+> vercel-pinecone-template@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.30
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 916ms
+ ○ Compiling / ...
+ ✓ Compiled / in 821ms (1158 modules)
+ GET / 200 in 1034ms
+ ✓ Compiled in 165ms (544 modules)
+ GET / 200 in 18ms
+ GET / 200 in 15ms
+ GET / 200 in 18ms
+ GET / 200 in 20ms
+ ✓ Compiled in 220ms (1158 modules)
+ GET / 200 in 120ms
+ ✓ Compiled in 196ms (1158 modules)
+ ✓ Compiled in 182ms (1158 modules)
+ ✓ Compiled in 154ms (1158 modules)

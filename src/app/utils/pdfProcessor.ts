@@ -122,6 +122,9 @@ export async function seedPDF(
     // Initialize the Pinecone client
     const pinecone = new Pinecone();
 
+    // Generate unique upload ID for this upload session
+    const uploadId = Date.now().toString();
+
     // Destructure the options object
     const { splittingMethod, chunkSize, chunkOverlap, splitByPages = true } = options;
 
@@ -141,7 +144,7 @@ export async function seedPDF(
 
     // Prepare documents by splitting the pages
     const documents = await Promise.all(
-      pages.map(page => preparePDFDocument(page, splitter, splitByPages))
+      pages.map(page => preparePDFDocument(page, splitter, splitByPages, uploadId))
     );
 
     // Create Pinecone index if it does not exist
@@ -210,7 +213,8 @@ async function embedPDFDocument(doc: Document): Promise<PineconeRecord> {
         pageNumber: doc.metadata.pageNumber as number,
         filePath: doc.metadata.filePath as string,
         hash: doc.metadata.hash as string,
-        type: 'pdf'
+        type: 'pdf',
+        uploadId: doc.metadata.uploadId as string
       }
     } as PineconeRecord;
   } catch (error) {
@@ -222,7 +226,8 @@ async function embedPDFDocument(doc: Document): Promise<PineconeRecord> {
 async function preparePDFDocument(
   page: PDFPage, 
   splitter: DocumentSplitter,
-  splitByPages: boolean
+  splitByPages: boolean,
+  uploadId: string
 ): Promise<Document[]> {
   const pageContent = page.content.trim();
 
@@ -241,7 +246,9 @@ async function preparePDFDocument(
         pageNumber: page.pageNumber,
         filePath: page.filePath,
         text: truncateStringByBytes(pageContent, 36000),
-        hash: md5(pageContent)
+        hash: md5(pageContent),
+        type: 'pdf',
+        uploadId: uploadId
       },
     }];
   } else {
@@ -254,7 +261,9 @@ async function preparePDFDocument(
             filename: page.filename,
             pageNumber: page.pageNumber,
             filePath: page.filePath,
-            text: truncateStringByBytes(pageContent, 36000)
+            text: truncateStringByBytes(pageContent, 36000),
+            type: 'pdf',
+            uploadId: uploadId
           },
         }),
       ]);
@@ -267,7 +276,9 @@ async function preparePDFDocument(
             pageContent: doc.pageContent.trim(),
             metadata: {
               ...doc.metadata,
-              hash: md5(doc.pageContent.trim())
+              hash: md5(doc.pageContent.trim()),
+              type: 'pdf',
+              uploadId: uploadId
             },
           };
         });

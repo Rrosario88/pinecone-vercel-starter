@@ -8,6 +8,7 @@ import { PDFUpload } from "../Context/PDFUpload";
 import { ICard } from "../Context/Card";
 import { IUrlEntry } from "../Context/UrlButton";
 import { useToast } from "../Toast";
+import { crawlDocument } from "../Context/utils";
 
 interface ChatProps {
   splittingMethod?: string;
@@ -30,7 +31,7 @@ const Chat: React.FC<ChatProps> = ({
   setUrlEntries,
   setDocumentCards
 }) => {
-  const { messages, input, handleInputChange, handleSubmit } = useChat();
+  const { messages, input, handleInputChange, handleSubmit, reload } = useChat();
   const [showPDFUpload, setShowPDFUpload] = useState(false);
   const [showWebCrawl, setShowWebCrawl] = useState(false);
   const [clearTrigger, setClearTrigger] = useState(0);
@@ -67,85 +68,34 @@ const Chat: React.FC<ChatProps> = ({
   };
 
   const handleCrawlUrl = async (url: string) => {
-    // Set loading state
-    setUrlEntries(prev => 
-      prev.map(entry => 
-        entry.url === url ? { ...entry, loading: true } : entry
-      )
+    await crawlDocument(
+      url,
+      setUrlEntries,
+      setDocumentCards,
+      splittingMethod,
+      chunkSize,
+      overlap,
+      showToast
     );
-
-    try {
-      const response = await fetch("/api/crawl", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url,
-          options: {
-            splittingMethod,
-            chunkSize,
-            overlap,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Server responded with status ${response.status}`);
-      }
-
-      const { documents } = await response.json();
-      
-      if (documents && documents.length > 0) {
-        // Mark as seeded
-        setUrlEntries(prev => 
-          prev.map(entry => 
-            entry.url === url ? { ...entry, seeded: true, loading: false } : entry
-          )
-        );
-        // Update shared document cards so they appear in the document sources panel
-        setDocumentCards(documents);
-        handleWebCrawlSuccess(documents);
-      } else {
-        showToast('No content could be extracted from this URL. The website might be empty or blocked.', 'warning');
-        // Reset loading state
-        setUrlEntries(prev => 
-          prev.map(entry => 
-            entry.url === url ? { ...entry, loading: false } : entry
-          )
-        );
-      }
-    } catch (error) {
-      console.error('Web crawl error:', error);
-      
-      // Provide more specific error messages
-      let errorMessage = 'Failed to crawl website. Please check the URL and try again.';
-      if (error.message.includes('Failed to fetch')) {
-        errorMessage = 'Connection failed. Please check your internet connection and try again.';
-      } else if (error.message.includes('404')) {
-        errorMessage = 'Website not found. Please check if the URL is correct.';
-      } else if (error.message.includes('403') || error.message.includes('401')) {
-        errorMessage = 'Access denied. The website may be protected or require authentication.';
-      } else if (error.message.includes('500')) {
-        errorMessage = 'Server error occurred. Please try again in a moment.';
-      } else if (error.message.includes('timeout')) {
-        errorMessage = 'Request timed out. The website may be slow to respond.';
-      }
-      
-      showToast(errorMessage, 'error');
-      
-      // Reset loading state
-      setUrlEntries(prev => 
-        prev.map(entry => 
-          entry.url === url ? { ...entry, loading: false } : entry
-        )
-      );
+    
+    // Get updated documents after crawling
+    const urlEntry = urlEntries.find(entry => entry.url === url);
+    if (urlEntry?.seeded) {
+      handleWebCrawlSuccess([]);
     }
+  };
+
+  const handleRegenerate = (messageIndex: number) => {
+    // Find the last user message before the assistant message at messageIndex
+    // and regenerate the response from that point
+    reload();
   };
 
 
   return (
     <div id="chat" className="flex flex-col h-full w-full">
       <ToastContainer />
-      <Messages messages={messages} />
+      <Messages messages={messages} onRegenerate={handleRegenerate} />
       
       {/* PDF Upload Modal */}
       {showPDFUpload && (
@@ -155,9 +105,10 @@ const Chat: React.FC<ChatProps> = ({
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Upload PDF Documents</h3>
               <button
                 onClick={() => setShowPDFUpload(false)}
-                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="group relative p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
               >
-                <X size={20} />
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded-lg"></div>
+                <X size={20} className="relative" />
               </button>
             </div>
             <PDFUpload
@@ -180,9 +131,10 @@ const Chat: React.FC<ChatProps> = ({
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Web Sources</h3>
               <button
                 onClick={() => setShowWebCrawl(false)}
-                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="group relative p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
               >
-                <X size={20} />
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded-lg"></div>
+                <X size={20} className="relative" />
               </button>
             </div>
             
@@ -222,9 +174,10 @@ const Chat: React.FC<ChatProps> = ({
                         input.value = 'https://';
                       }
                     }}
-                    className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    className="group relative px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300 ease-in-out hover:scale-105 active:scale-95"
                   >
-                    <Plus size={16} />
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded-lg"></div>
+                    <Plus size={16} className="relative" />
                   </button>
                 </div>
               </div>
@@ -260,22 +213,24 @@ const Chat: React.FC<ChatProps> = ({
                           ) : (
                             <button
                               onClick={() => handleCrawlUrl(entry.url)}
-                              className={`px-2 py-1 text-xs rounded transition-colors ${
+                              className={`group relative px-2 py-1 text-xs rounded transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 ${
                                 entry.seeded 
                                   ? 'bg-blue-600 hover:bg-blue-700 text-white' 
                                   : 'bg-green-600 hover:bg-green-700 text-white'
                               }`}
                               title={entry.seeded ? "Re-crawl this URL" : "Crawl this URL"}
                             >
-                              {entry.seeded ? 'Re-crawl' : 'Crawl'}
+                              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded"></div>
+                              <span className="relative">{entry.seeded ? 'Re-crawl' : 'Crawl'}</span>
                             </button>
                           )}
                           <button
                             onClick={() => handleRemoveUrl(index)}
-                            className="p-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                            className="group relative p-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
                             title="Remove URL"
                           >
-                            <Trash2 size={14} />
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded"></div>
+                            <Trash2 size={14} className="relative" />
                           </button>
                         </div>
                       </div>
@@ -314,20 +269,22 @@ const Chat: React.FC<ChatProps> = ({
           <button
             type="button"
             onClick={() => setShowWebCrawl(true)}
-            className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200"
+            className="group relative p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
             title="Web Sources"
           >
-            <Globe size={18} />
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded-lg"></div>
+            <Globe size={18} className="relative" />
           </button>
           
           {/* PDF Upload Button */}
           <button
             type="button"
             onClick={() => setShowPDFUpload(true)}
-            className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200"
+            className="group relative p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
             title="Upload PDF"
           >
-            <Paperclip size={18} />
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded-lg"></div>
+            <Paperclip size={18} className="relative" />
           </button>
         </div>
         

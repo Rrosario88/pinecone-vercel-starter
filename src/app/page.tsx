@@ -64,7 +64,16 @@ const Page: React.FC = () => {
   }, [messages, gotMessages]);
 
   return (
-    <div className="flex flex-col justify-between h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200 p-4 mx-auto max-w-full">
+    <>
+      <button
+        onClick={() => setModalOpen(true)}
+        className="group fixed left-4 top-4 z-50 p-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-full shadow-lg border border-gray-200/50 dark:border-gray-700/50 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all duration-300 ease-in-out hover:scale-105 active:scale-95"
+        title="Help & Instructions"
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md rounded-full"></div>
+        <AiOutlineInfoCircle size={20} className="relative" />
+      </button>
+
       <SideMenu 
         splittingMethod={splittingMethod}
         chunkSize={chunkSize}
@@ -74,20 +83,14 @@ const Page: React.FC = () => {
         onOverlapChange={setOverlap}
       />
       
-      <Header className="my-6" />
-      
-      <button
-        onClick={() => setModalOpen(true)}
-        className="fixed left-4 top-4 text-xl text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors z-30 p-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg border border-gray-200/50 dark:border-gray-700/50"
-        title="Help & Instructions"
-      >
-        <AiOutlineInfoCircle />
-      </button>
+      <div className="flex flex-col justify-between min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200 p-4 mx-auto max-w-full">
+        
+        <Header className="my-6" />
 
-      <InstructionModal
-        isOpen={isModalOpen}
-        onClose={() => setModalOpen(false)}
-      />
+        <InstructionModal
+          isOpen={isModalOpen}
+          onClose={() => setModalOpen(false)}
+        />
       
       <div className="flex w-full flex-grow overflow-hidden relative gap-4">
         <div className="flex-1 min-w-0">
@@ -95,8 +98,24 @@ const Page: React.FC = () => {
             splittingMethod={splittingMethod}
             chunkSize={chunkSize}
             overlap={overlap}
-            onPDFUpload={(documents) => setUploadedDocuments(documents)}
-            onWebCrawl={(documents) => setWebCrawlDocuments(documents)}
+            onPDFUpload={(documents) => {
+              console.log('PDF Upload Success - Documents received:', documents.length, 'chunks');
+              setUploadedDocuments(documents);
+              setDocumentCards(prev => {
+                const newCards = [...prev, ...documents];
+                console.log('Updated document cards total:', newCards.length);
+                return newCards;
+              });
+            }}
+            onWebCrawl={(documents) => {
+              console.log('Web Crawl Success - Documents received:', documents.length, 'chunks');
+              setWebCrawlDocuments(documents);
+              setDocumentCards(prev => {
+                const newCards = [...prev, ...documents];
+                console.log('Updated document cards total:', newCards.length);
+                return newCards;
+              });
+            }}
             urlEntries={urlEntries}
             setUrlEntries={setUrlEntries}
             setDocumentCards={setDocumentCards}
@@ -119,13 +138,14 @@ const Page: React.FC = () => {
         
         <button
           type="button"
-          className="lg:hidden fixed bottom-20 right-4 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 shadow-lg transition-colors"
+          className="group relative lg:hidden fixed bottom-20 right-4 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 shadow-lg transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
           onClick={(e) => {
             const contextPanel = document.querySelector('.context-panel');
             contextPanel?.classList.toggle('translate-x-full');
           }}
         >
-          ☰
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded-full"></div>
+          <span className="relative">☰</span>
         </button>
         
         <div className="context-panel lg:hidden fixed inset-y-0 right-0 w-80 bg-gray-200 dark:bg-gray-800 shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out border-l border-gray-300 dark:border-gray-700 z-40">
@@ -142,7 +162,8 @@ const Page: React.FC = () => {
           />
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

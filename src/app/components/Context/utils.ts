@@ -10,12 +10,28 @@ export async function crawlDocument(
   overlap: number,
   showToast?: (message: string, type: 'success' | 'error' | 'info' | 'warning', duration?: number) => void
 ): Promise<void> {
-  // Set loading state
-  setEntries((seeded: IUrlEntry[]) =>
-    seeded.map((seed: IUrlEntry) =>
+  // Check if URL is already seeded
+  let alreadySeeded = false;
+  setEntries((prevEntries: IUrlEntry[]) => {
+    alreadySeeded = prevEntries.some((entry: IUrlEntry) => entry.url === url && entry.seeded);
+    if (alreadySeeded) {
+      return prevEntries; // Don't modify if already seeded
+    }
+    // Set loading state
+    return prevEntries.map((seed: IUrlEntry) =>
       seed.url === url ? { ...seed, loading: true } : seed
-    )
-  );
+    );
+  });
+
+  // If already seeded, show message and return early
+  if (alreadySeeded) {
+    if (showToast) {
+      showToast(`URL "${url}" has already been crawled and indexed`, 'info');
+    } else {
+      console.log(`URL "${url}" has already been crawled and indexed`);
+    }
+    return;
+  }
 
   try {
     const response = await fetch("/api/crawl", {
@@ -38,7 +54,7 @@ export async function crawlDocument(
     const { documents } = await response.json();
 
     if (documents && documents.length > 0) {
-      setCards(documents);
+      setCards(prevCards => [...prevCards, ...documents]);
       
       // Mark as seeded
       setEntries((prevEntries: IUrlEntry[]) =>
