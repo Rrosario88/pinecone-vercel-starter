@@ -121,9 +121,9 @@ export function SideMenu({
               
               {splittingMethod === "recursive" && (
                 <div className="space-y-4">
-                  <div className="flex flex-col">
+                  <div className="flex flex-col group/slider">
                     <label className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
-                      Chunk Size: {chunkSize}
+                      Chunk Size: {chunkSize} characters
                     </label>
                     <input
                       type="range"
@@ -133,9 +133,9 @@ export function SideMenu({
                       onChange={(e) => onChunkSizeChange?.(parseInt(e.target.value))}
                       className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
                     />
-                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      <span>200</span>
-                      <span>2048</span>
+                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1 opacity-0 group-hover/slider:opacity-100 transition-opacity duration-200">
+                      <span>200 chars</span>
+                      <span>2048 chars</span>
                     </div>
                   </div>
                   

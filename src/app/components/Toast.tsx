@@ -88,9 +88,10 @@ export const Toast: React.FC<ToastProps> = ({
         
         <button
           onClick={handleClose}
-          className="flex-shrink-0 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-white/50 dark:hover:bg-gray-800/50 transition-colors"
+          className="group relative flex-shrink-0 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
         >
-          <X size={16} />
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md rounded-lg"></div>
+          <X size={16} className="relative" />
         </button>
       </div>
     </div>

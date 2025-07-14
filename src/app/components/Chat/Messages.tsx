@@ -57,6 +57,19 @@ export default function Messages({ messages, onRegenerate }: MessagesProps) {
                 <>
                   <ReactMarkdown
                     components={{
+                      img: ({ src, alt, ...props }) => (
+                        <img
+                          src={src}
+                          alt={alt}
+                          className="max-w-full h-auto rounded-lg shadow-sm my-3"
+                          loading="lazy"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                          }}
+                          {...props}
+                        />
+                      ),
                       h2: ({ children }) => (
                         <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-4 mb-2 border-b border-gray-300 dark:border-gray-600 pb-1">
                           {children}

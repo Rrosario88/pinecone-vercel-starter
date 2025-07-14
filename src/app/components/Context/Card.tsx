@@ -60,9 +60,16 @@ export const Card: FC<ICardProps> = ({ card, selected, chunkIndex }) => {
                   )}
                 </>
               ) : (
-                <span className="text-blue-600 dark:text-blue-300 font-medium select-text cursor-text truncate">
-                  {card.metadata.url}
-                </span>
+                <>
+                  <span className="text-blue-600 dark:text-blue-300 font-medium select-text cursor-text truncate">
+                    {card.metadata.url}
+                  </span>
+                  {chunkIndex !== undefined && (
+                    <span className="text-gray-600 dark:text-gray-400 text-xs select-text cursor-text">
+                      Chunk {chunkIndex + 1}
+                    </span>
+                  )}
+                </>
               )}
               
               {/* Content Preview */}
@@ -91,7 +98,40 @@ export const Card: FC<ICardProps> = ({ card, selected, chunkIndex }) => {
           <div className="border-t border-gray-300 dark:border-gray-600 pt-3">
             {/* Full Content */}
             <div className="select-text cursor-text">
-              <ReactMarkdown>{card.pageContent}</ReactMarkdown>
+              <ReactMarkdown
+                components={{
+                  img: ({ src, alt, ...props }) => (
+                    <img
+                      src={src}
+                      alt={alt}
+                      className="max-w-full h-auto rounded-lg shadow-sm my-2"
+                      loading="lazy"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                      {...props}
+                    />
+                  ),
+                  p: ({ children }) => (
+                    <p className="mb-2 leading-relaxed text-gray-700 dark:text-gray-300">
+                      {children}
+                    </p>
+                  ),
+                  strong: ({ children }) => (
+                    <strong className="font-semibold text-gray-900 dark:text-gray-100">
+                      {children}
+                    </strong>
+                  ),
+                  code: ({ children }) => (
+                    <code className="bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded text-gray-800 dark:text-gray-200 text-sm font-mono">
+                      {children}
+                    </code>
+                  )
+                }}
+              >
+                {card.pageContent}
+              </ReactMarkdown>
             </div>
             
             {/* Hash */}

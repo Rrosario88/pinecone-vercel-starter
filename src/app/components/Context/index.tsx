@@ -175,15 +175,21 @@ export const Context: React.FC<ContextProps> = ({
         </div>
         
         <div className="w-full px-4 pb-4">
-          <Button
-            className="w-full py-2 px-4 rounded-lg font-medium"
+          <button
+            className="group relative w-full py-2.5 px-4 rounded-lg font-medium text-gray-700 dark:text-gray-300 bg-gray-100/80 dark:bg-gray-700/80 border border-gray-300/50 dark:border-gray-600/50 backdrop-blur-sm transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 hover:bg-gray-200/80 dark:hover:bg-gray-600/80"
             onClick={async () => {
               await clearIndex(setUrlEntries, setDocumentCards, setStatusMessage);
               setClearTrigger(prev => prev + 1); // Trigger clear in PDFUpload
             }}
           >
-            Clear Documents
-          </Button>
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-400/20 to-gray-600/20 opacity-0 group-hover:opacity-50 transition-opacity duration-300 blur-md rounded-lg"></div>
+            <span className="relative flex items-center justify-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Clear Documents
+            </span>
+          </button>
           
           {/* Status Message */}
           {statusMessage && (

@@ -65,15 +65,17 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
         <div className="flex gap-3 p-6 pt-2">
           <button
             onClick={onCancel}
-            className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100/80 dark:bg-gray-700/80 backdrop-blur-sm border border-gray-300/50 dark:border-gray-600/50 rounded-lg hover:bg-gray-200/80 dark:hover:bg-gray-600/80 transition-all duration-200"
+            className="group relative flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100/80 dark:bg-gray-700/80 backdrop-blur-sm border border-gray-300/50 dark:border-gray-600/50 rounded-lg transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
           >
-            {cancelText}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md rounded-lg"></div>
+            <span className="relative">{cancelText}</span>
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-500/90 backdrop-blur-sm border border-red-400/50 rounded-lg hover:bg-red-600/90 transition-all duration-200 shadow-lg"
+            className="group relative flex-1 px-4 py-2 text-sm font-medium text-white bg-red-500/90 backdrop-blur-sm border border-red-400/50 rounded-lg transition-all duration-300 ease-in-out hover:scale-110 active:scale-95 shadow-lg"
           >
-            {confirmText}
+            <div className="absolute inset-0 bg-gradient-to-r from-red-400/20 to-red-600/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md rounded-lg"></div>
+            <span className="relative">{confirmText}</span>
           </button>
         </div>
       </div>
