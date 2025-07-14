@@ -21,3 +21,567 @@
  ✓ Compiled in 196ms (1158 modules)
  ✓ Compiled in 182ms (1158 modules)
  ✓ Compiled in 154ms (1158 modules)
+ ✓ Compiled in 309ms (1156 modules)
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⨯ src/app/page.tsx (74:10) @ AiOutlineInfoCircle
+ ⨯ ReferenceError: AiOutlineInfoCircle is not defined
+    at Page (./src/app/page.tsx:83:97)
+digest: "2937281445"
+[0m [90m 72 |[39m       [33m>[39m[0m
+[0m [90m 73 |[39m         [33m<[39m[33mdiv[39m className[33m=[39m[32m"absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md rounded-full"[39m[33m>[39m[33m<[39m[33m/[39m[33mdiv[39m[33m>[39m[0m
+[0m[31m[1m>[22m[39m[90m 74 |[39m         [33m<[39m[33mAiOutlineInfoCircle[39m size[33m=[39m{[35m20[39m} className[33m=[39m[32m"relative"[39m [33m/[39m[33m>[39m[0m
+[0m [90m    |[39m          [31m[1m^[22m[39m[0m
+[0m [90m 75 |[39m       [33m<[39m[33m/[39m[33mbutton[39m[33m>[39m[0m
+[0m [90m 76 |[39m[0m
+[0m [90m 77 |[39m       [33m<[39m[33mSideMenu[39m [0m
+ GET / 500 in 143ms
+ ✓ Compiled in 95ms (1156 modules)
+ GET / 200 in 70ms
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled in 225ms (1154 modules)
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⨯ src/app/components/SideMenu.tsx (44:10) @ Settings
+ ⨯ ReferenceError: Settings is not defined
+    at SideMenu (./src/app/components/SideMenu.tsx:56:97)
+digest: "2812846492"
+[0m [90m 42 |[39m       [33m>[39m[0m
+[0m [90m 43 |[39m         [33m<[39m[33mdiv[39m className[33m=[39m[32m"absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md rounded-full"[39m[33m>[39m[33m<[39m[33m/[39m[33mdiv[39m[33m>[39m[0m
+[0m[31m[1m>[22m[39m[90m 44 |[39m         [33m<[39m[33mSettings[39m size[33m=[39m{[35m20[39m} className[33m=[39m[32m"relative transition-transform duration-200"[39m [33m/[39m[33m>[39m[0m
+[0m [90m    |[39m          [31m[1m^[22m[39m[0m
+[0m [90m 45 |[39m       [33m<[39m[33m/[39m[33mbutton[39m[33m>[39m[0m
+[0m [90m 46 |[39m[0m
+[0m [90m 47 |[39m       {[90m/* Overlay */[39m}[0m
+ GET / 500 in 60ms
+ ✓ Compiled in 124ms (1154 modules)
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET / 200 in 32ms
+ ✓ Compiled /api/chat in 142ms (358 modules)
+Getting context for query: "hello"
+Generated embedding with 1536 dimensions
+Retrieved 0 potential matches
+0 docs passed similarity threshold (0.5)
+No qualifying documents found
+ POST /api/chat 200 in 3045ms
+Getting context for query: "hello"
+Generated embedding with 1536 dimensions
+Retrieved 0 potential matches
+0 docs passed similarity threshold (0.5)
+No qualifying documents found
+ POST /api/chat 200 in 2303ms
+ ✓ Compiled in 248ms (1154 modules)
+ ✓ Compiled in 110ms (1154 modules)
+ ✓ Compiled in 192ms (1154 modules)
+ ✓ Compiled in 97ms (1154 modules)
+ ✓ Compiled in 194ms (1154 modules)
+ ✓ Compiled in 98ms (1154 modules)
+ ✓ Compiled /api/upload-pdf in 331ms (811 modules)
+Upload API called
+File received: {
+  name: 'Skin Health Report Jun 2025.pdf',
+  size: 671564,
+  type: 'application/pdf'
+}
+PDF processing options: {
+  splittingMethod: 'markdown',
+  chunkSize: 256,
+  chunkOverlap: 1,
+  splitByPages: true
+}
+Starting PDF extraction for: Skin Health Report Jun 2025.pdf
+Read PDF file: 671564 bytes
+PDF parsed successfully: 47 pages, 95794 characters
+Extracted 47 pages from PDF
+(node:86808) [DEP0005] DeprecationWarning: Buffer() is deprecated due to security and usability issues. Please use the Buffer.alloc(), Buffer.allocUnsafe(), or Buffer.from() methods instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Embedding document: 2037 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2037 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2000 characters
+ POST /api/upload-pdf 200 in 6127ms
+ ✓ Compiled in 333ms (1154 modules)
+ ✓ Compiled in 120ms (1156 modules)
+ ✓ Compiled in 171ms (1156 modules)
+ ✓ Compiled in 84ms (1156 modules)
+ ✓ Compiled in 84ms (1156 modules)
+ ✓ Compiled in 210ms (1156 modules)
+ ✓ Compiled in 88ms (1156 modules)
+ ○ Compiling /api/crawl ...
+ ✓ Compiled /api/crawl in 718ms (1052 modules)
+Processing 94 documents for URL: https://samsung.com
+Error upserting chunk PineconeBadRequestError: Request size 3MB exceeds the maximum supported size of 2MB
+    at mapHttpStatusError (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/http.js:179:20)
+    at eval (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:65:69)
+    at step (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:33:23)
+    at Object.eval [as next] (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:14:53)
+    at fulfilled (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:5:58)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  cause: undefined
+}
+Error upserting chunk PineconeBadRequestError: Request size 3MB exceeds the maximum supported size of 2MB
+    at mapHttpStatusError (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/http.js:179:20)
+    at eval (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:65:69)
+    at step (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:33:23)
+    at Object.eval [as next] (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:14:53)
+    at fulfilled (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:5:58)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  cause: undefined
+}
+Error upserting chunk PineconeBadRequestError: Request size 3MB exceeds the maximum supported size of 2MB
+    at mapHttpStatusError (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/http.js:179:20)
+    at eval (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:65:69)
+    at step (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:33:23)
+    at Object.eval [as next] (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:14:53)
+    at fulfilled (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:5:58)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  cause: undefined
+}
+Error upserting chunk PineconeBadRequestError: Request size 3MB exceeds the maximum supported size of 2MB
+    at mapHttpStatusError (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/http.js:179:20)
+    at eval (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:65:69)
+    at step (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:33:23)
+    at Object.eval [as next] (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:14:53)
+    at fulfilled (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:5:58)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  cause: undefined
+}
+Error upserting chunk PineconeBadRequestError: Request size 3MB exceeds the maximum supported size of 2MB
+    at mapHttpStatusError (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/http.js:179:20)
+    at eval (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:65:69)
+    at step (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:33:23)
+    at Object.eval [as next] (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:14:53)
+    at fulfilled (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:5:58)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  cause: undefined
+}
+Error upserting chunk PineconeBadRequestError: Request size 3MB exceeds the maximum supported size of 2MB
+    at mapHttpStatusError (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/http.js:179:20)
+    at eval (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:65:69)
+    at step (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:33:23)
+    at Object.eval [as next] (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:14:53)
+    at fulfilled (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:5:58)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  cause: undefined
+}
+Error upserting chunk PineconeBadRequestError: Request size 3MB exceeds the maximum supported size of 2MB
+    at mapHttpStatusError (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/http.js:179:20)
+    at eval (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:65:69)
+    at step (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:33:23)
+    at Object.eval [as next] (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:14:53)
+    at fulfilled (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:5:58)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  cause: undefined
+}
+Error upserting chunk PineconeBadRequestError: Request size 3MB exceeds the maximum supported size of 2MB
+    at mapHttpStatusError (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/http.js:179:20)
+    at eval (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:65:69)
+    at step (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:33:23)
+    at Object.eval [as next] (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:14:53)
+    at fulfilled (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:5:58)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  cause: undefined
+}
+Error upserting chunk PineconeBadRequestError: Request size 3MB exceeds the maximum supported size of 2MB
+    at mapHttpStatusError (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/http.js:179:20)
+    at eval (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:65:69)
+    at step (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:33:23)
+    at Object.eval [as next] (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:14:53)
+    at fulfilled (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:5:58)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  cause: undefined
+}
+Error upserting chunk PineconeBadRequestError: Request size 3MB exceeds the maximum supported size of 2MB
+    at mapHttpStatusError (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/http.js:179:20)
+    at eval (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:65:69)
+    at step (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:33:23)
+    at Object.eval [as next] (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:14:53)
+    at fulfilled (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:5:58)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  cause: undefined
+}
+ POST /api/crawl 200 in 23757ms
+Processing 12 documents for URL: https://apple.com
+ POST /api/crawl 200 in 1634ms
+ ✓ Compiled /api/clearIndex in 121ms (1054 modules)
+Cleared PDF documents namespace
+Cleared default namespace
+ POST /api/clearIndex 200 in 2810ms
+ ✓ Compiled in 186ms (1156 modules)
+ ✓ Compiled in 294ms (1156 modules)
+ ✓ Compiled in 119ms (1156 modules)
+ GET / 200 in 129ms
+ ✓ Compiled /api/crawl in 187ms (1052 modules)
+Processing 12 documents for URL: https://apple.com
+ POST /api/crawl 200 in 1901ms
+ ✓ Compiled /api/clearIndex in 109ms (1054 modules)
+PDF namespace might be empty or not exist: PineconeNotFoundError: A call to https://pdf-rag-0980eed.svc.aped-4627-b74a.pinecone.io/vectors/delete returned HTTP status 404.
+    at mapHttpStatusError (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/http.js:185:20)
+    at eval (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:65:69)
+    at step (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:33:23)
+    at Object.eval [as next] (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:14:53)
+    at fulfilled (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:5:58)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  cause: undefined
+}
+Cleared default namespace
+ POST /api/clearIndex 200 in 510ms
+ ✓ Compiled /api/upload-pdf in 258ms (1108 modules)
+Upload API called
+File received: {
+  name: 'Skin Health Report Jun 2025.pdf',
+  size: 671564,
+  type: 'application/pdf'
+}
+PDF processing options: {
+  splittingMethod: 'markdown',
+  chunkSize: 256,
+  chunkOverlap: 1,
+  splitByPages: true
+}
+Starting PDF extraction for: Skin Health Report Jun 2025.pdf
+Read PDF file: 671564 bytes
+PDF parsed successfully: 47 pages, 95794 characters
+Extracted 47 pages from PDF
+Embedding document: 2037 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2037 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2000 characters
+ POST /api/upload-pdf 200 in 4524ms
+Cleared PDF documents namespace
+Default namespace might be empty or not exist: PineconeNotFoundError: A call to https://pdf-rag-0980eed.svc.aped-4627-b74a.pinecone.io/vectors/delete returned HTTP status 404.
+    at mapHttpStatusError (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/http.js:185:20)
+    at eval (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:65:69)
+    at step (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:33:23)
+    at Object.eval [as next] (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:14:53)
+    at fulfilled (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:5:58)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  cause: undefined
+}
+ POST /api/clearIndex 200 in 236ms
+Upload API called
+File received: {
+  name: 'Skin Health Report Jun 2025.pdf',
+  size: 671564,
+  type: 'application/pdf'
+}
+PDF processing options: {
+  splittingMethod: 'markdown',
+  chunkSize: 256,
+  chunkOverlap: 1,
+  splitByPages: true
+}
+Starting PDF extraction for: Skin Health Report Jun 2025.pdf
+Read PDF file: 671564 bytes
+PDF parsed successfully: 47 pages, 95794 characters
+Extracted 47 pages from PDF
+Embedding document: 2037 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2037 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2000 characters
+ POST /api/upload-pdf 200 in 4262ms
+Upload API called
+File received: {
+  name: 'How-To-Succeed-At-MrBeast-Production.pdf',
+  size: 1845430,
+  type: 'application/pdf'
+}
+PDF processing options: {
+  splittingMethod: 'markdown',
+  chunkSize: 256,
+  chunkOverlap: 1,
+  splitByPages: true
+}
+Starting PDF extraction for: How-To-Succeed-At-MrBeast-Production.pdf
+Read PDF file: 1845430 bytes
+PDF parsed successfully: 36 pages, 48947 characters
+Extracted 36 pages from PDF
+Embedding document: 1358 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1359 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1359 characters
+Embedding document: 1360 characters
+Embedding document: 1360 characters
+Embedding document: 1347 characters
+ POST /api/upload-pdf 200 in 4223ms
+ ✓ Compiled in 367ms (1156 modules)
+ ✓ Compiled in 101ms (1156 modules)
+ ✓ Compiled in 81ms (1156 modules)
+ ✓ Compiled in 95ms (1156 modules)
+ ✓ Compiled in 78ms (1156 modules)
+ ✓ Compiled in 91ms (1156 modules)
+ ✓ Compiled in 394ms (1156 modules)
+ ✓ Compiled in 84ms (1156 modules)
+ ✓ Compiled in 71ms (1156 modules)
+ ✓ Compiled in 81ms (1156 modules)
+ ✓ Compiled in 141ms (1156 modules)
+ ✓ Compiled in 79ms (1156 modules)
+ ✓ Compiled in 71ms (1156 modules)
+ ✓ Compiled in 79ms (1156 modules)
+ ✓ Compiled in 88ms (1156 modules)
+ ✓ Compiled in 124ms (1156 modules)
+ ✓ Compiled in 83ms (1156 modules)
+ ✓ Compiled in 100ms (1156 modules)
+ ✓ Compiled in 81ms (543 modules)
+ ✓ Compiled in 133ms (1156 modules)
+ ✓ Compiled in 77ms (1156 modules)
+ ✓ Compiled in 92ms (1156 modules)
+ ✓ Compiled in 97ms (1156 modules)
+ ✓ Compiled in 204ms (1158 modules)
+ ✓ Compiled /api/clearIndex in 139ms (751 modules)
+Cleared PDF documents namespace
+Default namespace might be empty or not exist: PineconeNotFoundError: A call to https://pdf-rag-0980eed.svc.aped-4627-b74a.pinecone.io/vectors/delete returned HTTP status 404.
+    at mapHttpStatusError (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/http.js:185:20)
+    at eval (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:65:69)
+    at step (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:33:23)
+    at Object.eval [as next] (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:14:53)
+    at fulfilled (webpack-internal:///(rsc)/./node_modules/@pinecone-database/pinecone/dist/errors/handling.js:5:58)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  cause: undefined
+}
+ POST /api/clearIndex 200 in 778ms
+ ✓ Compiled /api/upload-pdf in 248ms (815 modules)
+Upload API called
+File received: {
+  name: 'Skin Health Report Jun 2025.pdf',
+  size: 671564,
+  type: 'application/pdf'
+}
+PDF processing options: {
+  splittingMethod: 'markdown',
+  chunkSize: 256,
+  chunkOverlap: 1,
+  splitByPages: true
+}
+Starting PDF extraction for: Skin Health Report Jun 2025.pdf
+Read PDF file: 671564 bytes
+PDF parsed successfully: 47 pages, 95794 characters
+Extracted 47 pages from PDF
+Embedding document: 2037 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2037 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2038 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2039 characters
+Embedding document: 2000 characters
+ POST /api/upload-pdf 200 in 4960ms
+ ✓ Compiled in 270ms (1158 modules)
+ ✓ Compiled in 78ms (1158 modules)
+Getting context for query: "hello"
+Generated embedding with 1536 dimensions
+Retrieved 8 potential matches
+8 docs passed similarity threshold (0.5)
+Match 1: Score 0.741891265, Source: Skin Health Report Jun 2025.pdf, Page: 21
+Match 2: Score 0.736350894, Source: Skin Health Report Jun 2025.pdf, Page: 14
+Match 3: Score 0.734285533, Source: Skin Health Report Jun 2025.pdf, Page: 12
+Final context: 14671 characters, ~3668 tokens
+ POST /api/chat 200 in 4901ms
+ ✓ Compiled in 273ms (1158 modules)
+ ✓ Compiled in 80ms (1158 modules)
+ GET / 200 in 135ms
+Getting context for query: "hello"
+Generated embedding with 1536 dimensions
+Retrieved 8 potential matches
+8 docs passed similarity threshold (0.5)
+Match 1: Score 0.741891265, Source: Skin Health Report Jun 2025.pdf, Page: 21
+Match 2: Score 0.736350894, Source: Skin Health Report Jun 2025.pdf, Page: 14
+Match 3: Score 0.734285533, Source: Skin Health Report Jun 2025.pdf, Page: 12
+Final context: 14671 characters, ~3668 tokens
+ POST /api/chat 200 in 4781ms
+ ✓ Compiled in 177ms (1158 modules)
