@@ -10,6 +10,7 @@ export interface ICard {
     filename?: string;
     pageNumber?: number;
     type?: string;
+    uploadId?: string;
   };
 }
 

@@ -92,16 +92,17 @@ export async function crawlDocument(
     );
 
     // Provide more specific error messages
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
     let errorMessage = 'Failed to crawl website. Please check the URL and try again.';
-    if (error.message.includes('Failed to fetch')) {
+    if (errorMsg.includes('Failed to fetch')) {
       errorMessage = 'Connection failed. Please check your internet connection and try again.';
-    } else if (error.message.includes('404')) {
+    } else if (errorMsg.includes('404')) {
       errorMessage = 'Website not found. Please check if the URL is correct.';
-    } else if (error.message.includes('403') || error.message.includes('401')) {
+    } else if (errorMsg.includes('403') || errorMsg.includes('401')) {
       errorMessage = 'Access denied. The website may be protected or require authentication.';
-    } else if (error.message.includes('500')) {
+    } else if (errorMsg.includes('500')) {
       errorMessage = 'Server error occurred. Please try again in a moment.';
-    } else if (error.message.includes('timeout')) {
+    } else if (errorMsg.includes('timeout')) {
       errorMessage = 'Request timed out. The website may be slow to respond.';
     }
 

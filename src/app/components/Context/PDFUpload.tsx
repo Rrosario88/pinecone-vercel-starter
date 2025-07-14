@@ -104,31 +104,32 @@ export const PDFUpload: React.FC<PDFUploadProps> = ({
         throw new Error(result.error || 'Upload failed');
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Upload error details:', {
-        error: error.message,
+        error: errorMessage,
         file: file.name,
         size: file.size,
         type: file.type
       });
       
       // Provide more specific error messages
-      let errorMessage = 'Upload failed';
-      if (error.message.includes('Failed to fetch')) {
-        errorMessage = 'Connection error - please check if the server is running';
-      } else if (error.message.includes('413')) {
-        errorMessage = 'File too large - please try a smaller PDF';
-      } else if (error.message.includes('400')) {
-        errorMessage = 'Invalid file format - please upload a valid PDF';
-      } else if (error.message.includes('500')) {
-        errorMessage = 'Server error - please try again in a moment';
+      let userErrorMessage = 'Upload failed';
+      if (errorMessage.includes('Failed to fetch')) {
+        userErrorMessage = 'Connection error - please check if the server is running';
+      } else if (errorMessage.includes('413')) {
+        userErrorMessage = 'File too large - please try a smaller PDF';
+      } else if (errorMessage.includes('400')) {
+        userErrorMessage = 'Invalid file format - please upload a valid PDF';
+      } else if (errorMessage.includes('500')) {
+        userErrorMessage = 'Server error - please try again in a moment';
       } else {
-        errorMessage = `Upload failed: ${error.message}`;
+        userErrorMessage = `Upload failed: ${errorMessage}`;
       }
       
       if (showToast) {
-        showToast(errorMessage, 'error');
+        showToast(userErrorMessage, 'error');
       } else {
-        alert(errorMessage);
+        alert(userErrorMessage);
       }
       
       // Remove the failed upload from the list

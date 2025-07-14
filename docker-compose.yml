@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  pdf-rag-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: pdf-rag-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      # API Keys (to be provided via .env file)
+      - PINECONE_API_KEY=${PINECONE_API_KEY}
+      - PINECONE_ENVIRONMENT=${PINECONE_ENVIRONMENT:-gcp-starter}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      # Application Configuration
+      - NEXT_TELEMETRY_DISABLED=1
+    volumes:
+      # Persist uploaded PDF files
+      - pdf_uploads:/app/uploads
+      # Optional: logs volume
+      - app_logs:/app/logs
+    networks:
+      - pdf-rag-network
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pdf-rag.rule=Host(`localhost`)"
+      - "traefik.http.services.pdf-rag.loadbalancer.server.port=3000"
+
+volumes:
+  pdf_uploads:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/uploads
+  app_logs:
+    driver: local
+
+networks:
+  pdf-rag-network:
+    driver: bridge
+    name: pdf-rag-network
