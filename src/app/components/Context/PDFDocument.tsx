@@ -1,18 +1,26 @@
 import React, { FC, useState } from "react";
-import { FileText, ChevronDown, ChevronRight } from "lucide-react";
+import { FileText, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { Card, ICard } from "./Card";
 
 interface IPDFDocumentProps {
   filename: string;
   chunks: ICard[];
   selected: string[] | null;
+  onDelete?: (filename: string) => void;
 }
 
-export const PDFDocument: FC<IPDFDocumentProps> = ({ filename, chunks, selected }) => {
+export const PDFDocument: FC<IPDFDocumentProps> = ({ filename, chunks, selected, onDelete }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleToggleChunks = () => {
     setIsExpanded(!isExpanded);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete(filename);
+    }
   };
 
   return (
@@ -32,15 +40,31 @@ export const PDFDocument: FC<IPDFDocumentProps> = ({ filename, chunks, selected 
           </div>
         </div>
         
-        <div 
-          className="flex-shrink-0 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 p-1 rounded transition-colors"
-          onClick={handleToggleChunks}
-        >
-          {isExpanded ? (
-            <ChevronDown size={16} className="text-gray-500 dark:text-gray-400" />
-          ) : (
-            <ChevronRight size={16} className="text-gray-500 dark:text-gray-400" />
+        <div className="flex items-center gap-1">
+          {/* Delete Button */}
+          {onDelete && (
+            <button
+              onClick={handleDelete}
+              className="group relative p-1 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
+              title={`Delete ${filename}`}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md"></div>
+              <Trash2 size={14} className="relative text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 transition-colors" />
+            </button>
           )}
+          
+          {/* Toggle Button */}
+          <button 
+            className="group relative flex-shrink-0 cursor-pointer p-1 rounded transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
+            onClick={handleToggleChunks}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md"></div>
+            {isExpanded ? (
+              <ChevronDown size={16} className="relative text-gray-500 dark:text-gray-400 transition-colors" />
+            ) : (
+              <ChevronRight size={16} className="relative text-gray-500 dark:text-gray-400 transition-colors" />
+            )}
+          </button>
         </div>
       </div>
 
@@ -49,7 +73,7 @@ export const PDFDocument: FC<IPDFDocumentProps> = ({ filename, chunks, selected 
         <div className="mt-2 space-y-3 pl-4 border-l-2 border-gray-300 dark:border-gray-600">
           {chunks.map((chunk, index) => (
             <div key={chunk.metadata.hash}>
-              <Card card={chunk} selected={selected} />
+              <Card card={chunk} selected={selected} chunkIndex={index} />
             </div>
           ))}
         </div>

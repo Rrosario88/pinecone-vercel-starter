@@ -6,6 +6,7 @@ import { WebDocument } from "./WebDocument";
 import { clearIndex, crawlDocument } from "./utils";
 import { Button } from "./Button";
 import { useToast } from "../Toast";
+import { ConfirmDialog } from "../ConfirmDialog";
 interface ContextProps {
   className: string;
   selected: string[] | null;
@@ -32,6 +33,78 @@ export const Context: React.FC<ContextProps> = ({
   const [clearTrigger, setClearTrigger] = useState(0);
   const [statusMessage, setStatusMessage] = useState<string>('');
   const { showToast, ToastContainer } = useToast();
+  
+  // Confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
+
+  // Delete individual documents
+  const handleDeletePDF = async (filename: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete PDF Document',
+      message: `Are you sure you want to delete "${filename}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          // Filter out the chunks for this specific PDF
+          const remainingCards = documentCards.filter(card => 
+            !(card.metadata.type === 'pdf' && card.metadata.filename === filename)
+          );
+          setDocumentCards(remainingCards);
+          showToast(`Deleted "${filename}"`, 'success');
+        } catch (error) {
+          console.error('Error deleting PDF:', error);
+          showToast('Failed to delete PDF', 'error');
+        }
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+      }
+    });
+  };
+
+  const handleDeleteWebDocument = async (url: string) => {
+    // Extract domain name for display
+    const getDisplayName = (url: string) => {
+      try {
+        const domain = new URL(url).hostname;
+        return domain.replace('www.', '');
+      } catch {
+        return url;
+      }
+    };
+
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Web Document',
+      message: `Are you sure you want to delete content from "${getDisplayName(url)}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          // Filter out the chunks for this specific URL
+          const remainingCards = documentCards.filter(card => 
+            card.metadata.url !== url
+          );
+          setDocumentCards(remainingCards);
+          
+          // Also remove from URL entries if it exists
+          setUrlEntries(prev => prev.filter(entry => entry.url !== url));
+          
+          showToast(`Deleted content from "${getDisplayName(url)}"`, 'success');
+        } catch (error) {
+          console.error('Error deleting web document:', error);
+          showToast('Failed to delete web document', 'error');
+        }
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+      }
+    });
+  };
 
   // Scroll to selected card
   useEffect(() => {
@@ -80,6 +153,15 @@ export const Context: React.FC<ContextProps> = ({
       className={`flex flex-col rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 w-full transition-colors duration-200 h-full ${className}`}
     >
       <ToastContainer />
+      
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+      />
       {/* Fixed Header Section */}
       <div className="flex-shrink-0 bg-gray-50 dark:bg-gray-800 rounded-t-xl border-b border-gray-300 dark:border-gray-700">
         {/* Header */}
@@ -94,7 +176,7 @@ export const Context: React.FC<ContextProps> = ({
         
         <div className="w-full px-4 pb-4">
           <Button
-            className="w-full py-2 px-4 bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white rounded-lg font-medium active:scale-[98%] transition-all duration-100"
+            className="w-full py-2 px-4 rounded-lg font-medium"
             onClick={async () => {
               await clearIndex(setUrlEntries, setDocumentCards, setStatusMessage);
               setClearTrigger(prev => prev + 1); // Trigger clear in PDFUpload
@@ -150,6 +232,7 @@ export const Context: React.FC<ContextProps> = ({
                       filename={actualFilename}
                       chunks={chunks}
                       selected={selected}
+                      onDelete={handleDeletePDF}
                     />
                   );
                 })}
@@ -161,6 +244,7 @@ export const Context: React.FC<ContextProps> = ({
                     url={url}
                     chunks={chunks}
                     selected={selected}
+                    onDelete={handleDeleteWebDocument}
                   />
                 ))}
               </>

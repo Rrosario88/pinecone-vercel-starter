@@ -105,10 +105,10 @@ const Chat: React.FC<ChatProps> = ({
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Upload PDF Documents</h3>
               <button
                 onClick={() => setShowPDFUpload(false)}
-                className="group relative p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
+                className="group relative transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded-lg"></div>
-                <X size={20} className="relative" />
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg"></div>
+                <X size={20} className="relative text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" />
               </button>
             </div>
             <PDFUpload
@@ -131,10 +131,10 @@ const Chat: React.FC<ChatProps> = ({
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Web Sources</h3>
               <button
                 onClick={() => setShowWebCrawl(false)}
-                className="group relative p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
+                className="group relative transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded-lg"></div>
-                <X size={20} className="relative" />
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg"></div>
+                <X size={20} className="relative text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" />
               </button>
             </div>
             
@@ -269,22 +269,22 @@ const Chat: React.FC<ChatProps> = ({
           <button
             type="button"
             onClick={() => setShowWebCrawl(true)}
-            className="group relative p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
+            className="group relative p-2 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
             title="Web Sources"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded-lg"></div>
-            <Globe size={18} className="relative" />
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md"></div>
+            <Globe size={18} className="relative text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" />
           </button>
           
           {/* PDF Upload Button */}
           <button
             type="button"
             onClick={() => setShowPDFUpload(true)}
-            className="group relative p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
+            className="group relative p-2 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
             title="Upload PDF"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded-lg"></div>
-            <Paperclip size={18} className="relative" />
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md"></div>
+            <Paperclip size={18} className="relative text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" />
           </button>
         </div>
         

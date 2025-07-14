@@ -25,8 +25,8 @@ const UrlButton: FC<IURLButtonProps> = ({ entry, onClick }) => (
         entry.loading ? "shimmer" : ""
       } ${
         entry.seeded 
-          ? "bg-green-600 hover:bg-green-500 text-white" 
-          : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100"
+          ? "!bg-green-600 hover:!bg-green-500 !text-white" 
+          : "!bg-gray-200 !hover:bg-gray-300 dark:!bg-gray-700 dark:hover:!bg-gray-600 !text-gray-900 dark:!text-gray-100"
       }`}
       onClick={onClick}
     >
