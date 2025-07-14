@@ -55,15 +55,34 @@ export const Context: React.FC<ContextProps> = ({
       message: `Are you sure you want to delete "${filename}"? This action cannot be undone.`,
       onConfirm: async () => {
         try {
-          // Filter out the chunks for this specific PDF
-          const remainingCards = documentCards.filter(card => 
-            !(card.metadata.type === 'pdf' && card.metadata.filename === filename)
-          );
-          setDocumentCards(remainingCards);
-          showToast(`Deleted "${filename}"`, 'success');
+          // Call API to delete from Pinecone
+          const response = await fetch('/api/delete-document', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              filename,
+              type: 'pdf'
+            }),
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            // Filter out the chunks for this specific PDF from UI
+            const remainingCards = documentCards.filter(card => 
+              !(card.metadata.type === 'pdf' && card.metadata.filename === filename)
+            );
+            setDocumentCards(remainingCards);
+            showToast(`Deleted "${filename}" (${result.deletedCount} chunks)`, 'success');
+          } else {
+            throw new Error(result.error || 'Failed to delete from Pinecone');
+          }
         } catch (error) {
           console.error('Error deleting PDF:', error);
-          showToast('Failed to delete PDF', 'error');
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          showToast(`Failed to delete PDF: ${errorMessage}`, 'error');
         }
         setConfirmDialog(prev => ({ ...prev, isOpen: false }));
       }
@@ -87,19 +106,38 @@ export const Context: React.FC<ContextProps> = ({
       message: `Are you sure you want to delete content from "${getDisplayName(url)}"? This action cannot be undone.`,
       onConfirm: async () => {
         try {
-          // Filter out the chunks for this specific URL
-          const remainingCards = documentCards.filter(card => 
-            card.metadata.url !== url
-          );
-          setDocumentCards(remainingCards);
-          
-          // Also remove from URL entries if it exists
-          setUrlEntries(prev => prev.filter(entry => entry.url !== url));
-          
-          showToast(`Deleted content from "${getDisplayName(url)}"`, 'success');
+          // Call API to delete from Pinecone
+          const response = await fetch('/api/delete-document', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url,
+              type: 'web'
+            }),
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            // Filter out the chunks for this specific URL from UI
+            const remainingCards = documentCards.filter(card => 
+              card.metadata.url !== url
+            );
+            setDocumentCards(remainingCards);
+            
+            // Also remove from URL entries if it exists
+            setUrlEntries(prev => prev.filter(entry => entry.url !== url));
+            
+            showToast(`Deleted content from "${getDisplayName(url)}" (${result.deletedCount} chunks)`, 'success');
+          } else {
+            throw new Error(result.error || 'Failed to delete from Pinecone');
+          }
         } catch (error) {
           console.error('Error deleting web document:', error);
-          showToast('Failed to delete web document', 'error');
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          showToast(`Failed to delete web document: ${errorMessage}`, 'error');
         }
         setConfirmDialog(prev => ({ ...prev, isOpen: false }));
       }

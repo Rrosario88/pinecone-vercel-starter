@@ -133,13 +133,13 @@ export function SideMenu({
                       onChange={(e) => onChunkSizeChange?.(parseInt(e.target.value))}
                       className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
                     />
-                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1 opacity-0 group-hover/slider:opacity-100 transition-opacity duration-200">
-                      <span>200 chars</span>
-                      <span>2048 chars</span>
+                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1 opacity-0 group-hover/slider:opacity-100 transition-all duration-500 ease-in-out transform group-hover/slider:translate-y-0 translate-y-1">
+                      <span className="transition-all duration-500 ease-in-out delay-75">200 chars</span>
+                      <span className="transition-all duration-500 ease-in-out delay-150">2048 chars</span>
                     </div>
                   </div>
                   
-                  <div className="flex flex-col">
+                  <div className="flex flex-col group/overlap">
                     <label className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
                       Overlap: {overlap}
                     </label>
@@ -151,9 +151,9 @@ export function SideMenu({
                       onChange={(e) => onOverlapChange?.(parseInt(e.target.value))}
                       className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
                     />
-                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      <span>1</span>
-                      <span>200</span>
+                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1 opacity-0 group-hover/overlap:opacity-100 transition-all duration-500 ease-in-out transform group-hover/overlap:translate-y-0 translate-y-1">
+                      <span className="transition-all duration-500 ease-in-out delay-75">1</span>
+                      <span className="transition-all duration-500 ease-in-out delay-150">200</span>
                     </div>
                   </div>
                 </div>

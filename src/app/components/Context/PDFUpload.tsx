@@ -3,6 +3,7 @@ import { ICard } from './Card';
 
 interface PDFUploadProps {
   onUploadSuccess: (documents: ICard[]) => void;
+  onAllUploadsComplete?: () => void;
   splittingMethod: string;
   chunkSize: number;
   overlap: number;
@@ -19,6 +20,7 @@ interface UploadedFile {
 
 export const PDFUpload: React.FC<PDFUploadProps> = ({
   onUploadSuccess,
+  onAllUploadsComplete,
   splittingMethod,
   chunkSize,
   overlap,
@@ -28,12 +30,15 @@ export const PDFUpload: React.FC<PDFUploadProps> = ({
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
+  const [pendingUploads, setPendingUploads] = useState(0);
+  const [allUploadsComplete, setAllUploadsComplete] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Clear files when clearTrigger changes
   React.useEffect(() => {
     if (clearTrigger && clearTrigger > 0) {
       setUploadedFiles([]);
+      setAllUploadsComplete(false);
     }
   }, [clearTrigger]);
 
@@ -47,7 +52,11 @@ export const PDFUpload: React.FC<PDFUploadProps> = ({
       return;
     }
 
+    // Increment pending uploads at the start
+    setPendingUploads(prev => prev + 1);
     setUploading(true);
+    // Reset completion state when new uploads start
+    setAllUploadsComplete(false);
     
     // Add file to uploaded files list with uploading status
     const newFile: UploadedFile = {
@@ -137,7 +146,19 @@ export const PDFUpload: React.FC<PDFUploadProps> = ({
         prev.filter(f => !(f.name === file.name && f.uploading))
       );
     } finally {
-      setUploading(false);
+      // Decrement pending uploads and check if all are complete
+      setPendingUploads(prev => {
+        const newCount = prev - 1;
+        if (newCount === 0) {
+          setUploading(false);
+          setAllUploadsComplete(true);
+          // All uploads complete, notify parent if callback provided
+          if (onAllUploadsComplete) {
+            setTimeout(() => onAllUploadsComplete(), 100);
+          }
+        }
+        return newCount;
+      });
     }
   };
 
@@ -194,12 +215,24 @@ export const PDFUpload: React.FC<PDFUploadProps> = ({
         />
         
         <div className="space-y-2">
-          <div className="text-2xl">📄</div>
+          <div className="text-2xl">
+            {allUploadsComplete ? '✅' : '📄'}
+          </div>
           <div className="text-gray-900 dark:text-gray-100 font-medium">
-            {uploading ? 'Uploading...' : 'Upload PDF Files'}
+            {uploading 
+              ? pendingUploads > 1 
+                ? `Uploading ${pendingUploads} files...` 
+                : 'Uploading...'
+              : allUploadsComplete
+                ? 'All uploads completed!'
+                : 'Upload PDF Files'
+            }
           </div>
           <div className="text-gray-600 dark:text-gray-400 text-sm">
-            Drag and drop PDF files here, or click to select
+            {allUploadsComplete 
+              ? 'All files have been processed successfully. You can close this window or upload more files.'
+              : 'Drag and drop PDF files here, or click to select'
+            }
           </div>
         </div>
       </div>

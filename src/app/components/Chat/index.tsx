@@ -39,7 +39,12 @@ const Chat: React.FC<ChatProps> = ({
 
   const handlePDFUploadSuccess = (documents: ICard[]) => {
     onPDFUpload?.(documents);
-    setShowPDFUpload(false);
+    // Don't close modal here - wait for all uploads to complete
+  };
+
+  const handleAllUploadsComplete = () => {
+    // Don't automatically close the modal - let user close it manually
+    console.log('All uploads completed - keeping modal open for user control');
   };
 
   const handleWebCrawlSuccess = (documents: ICard[]) => {
@@ -113,6 +118,7 @@ const Chat: React.FC<ChatProps> = ({
             </div>
             <PDFUpload
               onUploadSuccess={handlePDFUploadSuccess}
+              onAllUploadsComplete={handleAllUploadsComplete}
               splittingMethod={splittingMethod}
               chunkSize={chunkSize}
               overlap={overlap}
