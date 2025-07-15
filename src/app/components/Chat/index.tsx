@@ -36,16 +36,51 @@ const Chat: React.FC<ChatProps> = ({
   const [showWebCrawl, setShowWebCrawl] = useState(false);
   const [clearTrigger, setClearTrigger] = useState(0);
   const { showToast, ToastContainer } = useToast();
+  
+  // Persistent upload state
+  interface UploadedFile {
+    name: string;
+    size: number;
+    uploadedAt: string;
+    uploading?: boolean;
+    status?: 'uploading' | 'processing' | 'extracting' | 'embedding' | 'indexing' | 'completed' | 'failed';
+    statusMessage?: string;
+    progress?: number;
+  }
+  
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [uploading, setUploading] = useState(false);
 
-  const handlePDFUploadSuccess = (documents: ICard[]) => {
+  // Stable references for state setters
+  const updateUploadedFiles = React.useCallback((files: UploadedFile[] | ((prev: UploadedFile[]) => UploadedFile[])) => {
+    setUploadedFiles(files);
+  }, []);
+
+  const updateUploading = React.useCallback((loading: boolean | ((prev: boolean) => boolean)) => {
+    setUploading(loading);
+  }, []);
+
+  const handlePDFUploadSuccess = React.useCallback((documents: ICard[]) => {
     onPDFUpload?.(documents);
-    // Don't close modal here - wait for all uploads to complete
-  };
+    // Trigger a sync after successful upload (with delay for Pinecone indexing)
+    setTimeout(() => {
+      // Trigger re-render that will cause Context to sync
+      setDocumentCards(prev => [...prev]);
+    }, 2000);
+  }, [onPDFUpload, setDocumentCards]);
 
-  const handleAllUploadsComplete = () => {
+  const handleAllUploadsComplete = React.useCallback(() => {
     // Don't automatically close the modal - let user close it manually
     console.log('All uploads completed - keeping modal open for user control');
-  };
+  }, []);
+
+  // Clear upload state when clearTrigger changes
+  React.useEffect(() => {
+    if (clearTrigger > 0) {
+      updateUploadedFiles([]);
+      updateUploading(false);
+    }
+  }, [clearTrigger, updateUploadedFiles, updateUploading]);
 
   const handleWebCrawlSuccess = (documents: ICard[]) => {
     onWebCrawl?.(documents);
@@ -124,6 +159,10 @@ const Chat: React.FC<ChatProps> = ({
               overlap={overlap}
               clearTrigger={clearTrigger}
               showToast={showToast}
+              uploadedFiles={uploadedFiles}
+              setUploadedFiles={updateUploadedFiles}
+              uploading={uploading}
+              setUploading={updateUploading}
             />
           </div>
         </div>

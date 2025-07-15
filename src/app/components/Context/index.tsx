@@ -32,7 +32,7 @@ export const Context: React.FC<ContextProps> = ({
 }) => {
   const [clearTrigger, setClearTrigger] = useState(0);
   const [statusMessage, setStatusMessage] = useState<string>('');
-  const { showToast, ToastContainer } = useToast();
+  const { showToast } = useToast();
   
   // Confirmation dialog state
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -158,6 +158,36 @@ export const Context: React.FC<ContextProps> = ({
     }
   }, [statusMessage]);
 
+  // Sync with Pinecone database
+  const syncWithPinecone = async () => {
+    try {
+      const response = await fetch('/api/sync-documents');
+      const data = await response.json();
+      
+      if (data.success) {
+        setDocumentCards(data.documentCards);
+        console.log(`Synced ${data.stats.totalDocuments} document chunks from Pinecone`);
+      } else {
+        console.error('Failed to sync with Pinecone:', data.error);
+      }
+    } catch (error) {
+      console.error('Error syncing with Pinecone:', error);
+    }
+  };
+
+  // Sync on component mount and after changes
+  useEffect(() => {
+    // Initial sync when component mounts
+    syncWithPinecone();
+  }, []);
+
+  // Auto-sync when URL entries change (after web crawling)
+  useEffect(() => {
+    // Small delay to allow Pinecone to index
+    const timer = setTimeout(syncWithPinecone, 1000);
+    return () => clearTimeout(timer);
+  }, [urlEntries]);
+
   const DropdownLabel: React.FC<
     React.PropsWithChildren<{ htmlFor: string }>
   > = ({ htmlFor, children }) => (
@@ -190,8 +220,6 @@ export const Context: React.FC<ContextProps> = ({
     <div
       className={`flex flex-col rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 w-full transition-colors duration-200 h-full ${className}`}
     >
-      <ToastContainer />
-      
       {/* Confirmation Dialog */}
       <ConfirmDialog
         isOpen={confirmDialog.isOpen}
@@ -213,6 +241,7 @@ export const Context: React.FC<ContextProps> = ({
         </div>
         
         <div className="w-full px-4 pb-4">
+          {/* Clear Button */}
           <button
             className="group relative w-full py-2.5 px-4 rounded-lg font-medium text-gray-700 dark:text-gray-300 bg-gray-100/80 dark:bg-gray-700/80 border border-gray-300/50 dark:border-gray-600/50 backdrop-blur-sm transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 hover:bg-gray-200/80 dark:hover:bg-gray-600/80"
             onClick={async () => {

@@ -85,17 +85,17 @@ const Page: React.FC = () => {
         onOverlapChange={setOverlap}
       />
       
-      <div className="flex flex-col justify-between min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200 p-4 mx-auto max-w-full">
+      <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
         
-        <Header className="my-6" />
+        <Header className="flex-shrink-0 py-4 px-6" />
 
         <InstructionModal
           isOpen={isModalOpen}
           onClose={() => setModalOpen(false)}
         />
       
-      <div className="flex w-full flex-grow overflow-hidden relative gap-4">
-        <div className="flex-1 min-w-0">
+      <div className="flex flex-1 overflow-hidden relative gap-4 px-4 pb-4">
+        <div className="flex-1 min-w-0 h-full">
           <Chat 
             splittingMethod={splittingMethod}
             chunkSize={chunkSize}
@@ -124,7 +124,7 @@ const Page: React.FC = () => {
           />
         </div>
         
-        <div className="hidden lg:flex w-96 bg-gray-200 dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-700 transition-colors duration-200">
+        <div className="hidden lg:flex w-96 flex-col bg-gray-200 dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-700 transition-colors duration-200">
           <Context 
             className="w-full" 
             selected={context}

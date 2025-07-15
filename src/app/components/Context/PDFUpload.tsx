@@ -9,6 +9,10 @@ interface PDFUploadProps {
   overlap: number;
   clearTrigger?: number;
   showToast?: (message: string, type: 'success' | 'error' | 'info' | 'warning', duration?: number) => void;
+  uploadedFiles: UploadedFile[];
+  setUploadedFiles: React.Dispatch<React.SetStateAction<UploadedFile[]>>;
+  uploading: boolean;
+  setUploading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 interface UploadedFile {
@@ -29,21 +33,39 @@ export const PDFUpload: React.FC<PDFUploadProps> = ({
   overlap,
   clearTrigger,
   showToast,
+  uploadedFiles,
+  setUploadedFiles,
+  uploading,
+  setUploading,
 }) => {
-  const [uploading, setUploading] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
-  const [pendingUploads, setPendingUploads] = useState(0);
-  const [allUploadsComplete, setAllUploadsComplete] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Clear files when clearTrigger changes
   React.useEffect(() => {
     if (clearTrigger && clearTrigger > 0) {
       setUploadedFiles([]);
-      setAllUploadsComplete(false);
+      setUploading(false);
     }
-  }, [clearTrigger]);
+  }, [clearTrigger, setUploadedFiles, setUploading]);
+
+  // Check if uploads are complete whenever uploadedFiles changes
+  React.useEffect(() => {
+    const stillUploading = uploadedFiles.some(f => 
+      f.status === 'uploading' || 
+      f.status === 'processing' || 
+      f.status === 'extracting' || 
+      f.status === 'embedding' || 
+      f.status === 'indexing'
+    );
+    
+    if (uploadedFiles.length > 0 && !stillUploading && uploading) {
+      setUploading(false);
+      if (onAllUploadsComplete) {
+        onAllUploadsComplete();
+      }
+    }
+  }, [uploadedFiles, uploading, setUploading, onAllUploadsComplete]);
 
   const handleFileUpload = async (file: File) => {
     if (!file.type.includes('pdf')) {
@@ -55,11 +77,8 @@ export const PDFUpload: React.FC<PDFUploadProps> = ({
       return;
     }
 
-    // Increment pending uploads at the start
-    setPendingUploads(prev => prev + 1);
+    // Start uploading state
     setUploading(true);
-    // Reset completion state when new uploads start
-    setAllUploadsComplete(false);
     
     // Add file to uploaded files list with initial status
     const newFile: UploadedFile = {
@@ -146,9 +165,6 @@ export const PDFUpload: React.FC<PDFUploadProps> = ({
         // Call success callback with documents
         onUploadSuccess(result.documents);
         console.log('Upload successful:', result.chunks, 'chunks created');
-        if (showToast) {
-          showToast(`Successfully uploaded ${file.name} and created ${result.chunks} chunks`, 'success');
-        }
       } else {
         throw new Error(result.error || 'Upload failed');
       }
@@ -195,21 +211,9 @@ export const PDFUpload: React.FC<PDFUploadProps> = ({
             : f
         )
       );
-    } finally {
-      // Decrement pending uploads and check if all are complete
-      setPendingUploads(prev => {
-        const newCount = prev - 1;
-        if (newCount === 0) {
-          setUploading(false);
-          setAllUploadsComplete(true);
-          // All uploads complete, notify parent if callback provided
-          if (onAllUploadsComplete) {
-            setTimeout(() => onAllUploadsComplete(), 100);
-          }
-        }
-        return newCount;
-      });
     }
+    // Upload completion is now handled by useEffect
+  
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -217,16 +221,24 @@ export const PDFUpload: React.FC<PDFUploadProps> = ({
     setDragOver(false);
     
     const files = Array.from(e.dataTransfer.files);
-    files.forEach(handleFileUpload);
+    // Process files sequentially to avoid state update conflicts
+    processFilesSequentially(files);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    files.forEach(handleFileUpload);
+    // Process files sequentially to avoid state update conflicts
+    processFilesSequentially(files);
     
     // Reset the input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const processFilesSequentially = async (files: File[]) => {
+    for (const file of files) {
+      await handleFileUpload(file);
     }
   };
 
@@ -272,11 +284,21 @@ export const PDFUpload: React.FC<PDFUploadProps> = ({
           <div className="text-gray-600 dark:text-gray-400 text-sm">
             Drag and drop PDF files here, or click to select
           </div>
-          {pendingUploads > 0 && (
-            <div className="text-xs text-blue-600 dark:text-blue-400 mt-2">
-              Processing {pendingUploads} file{pendingUploads > 1 ? 's' : ''}...
-            </div>
-          )}
+          {(() => {
+            const pendingCount = uploadedFiles.filter(f => 
+              f.status === 'uploading' || 
+              f.status === 'processing' || 
+              f.status === 'extracting' || 
+              f.status === 'embedding' || 
+              f.status === 'indexing'
+            ).length;
+            
+            return pendingCount > 0 && (
+              <div className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                Processing {pendingCount} file{pendingCount > 1 ? 's' : ''}...
+              </div>
+            );
+          })()}
         </div>
       </div>
 

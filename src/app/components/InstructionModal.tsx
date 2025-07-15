@@ -66,7 +66,7 @@ const InstructionModal: React.FC<InstructionModalProps> = ({
               <h3 className="font-semibold text-green-900 dark:text-green-100 mb-3">🌐 Website Crawling:</h3>
               <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
                 <li>Click the earth icon to add website URLs</li>
-                <li>Use "Crawl" buttons in the Document Sources panel</li>
+                <li>Use &quot;Crawl&quot; buttons in the Document Sources panel</li>
                 <li>Web content is extracted and indexed automatically</li>
                 <li>Supports most public websites and documentation</li>
               </ul>
@@ -90,7 +90,7 @@ const InstructionModal: React.FC<InstructionModalProps> = ({
             <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border border-red-200 dark:border-red-800">
               <h3 className="font-semibold text-red-900 dark:text-red-100 mb-3">🗑️ Cleanup Options:</h3>
               <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                <li>"Clear Documents" removes all indexed content</li>
+                <li>&quot;Clear Documents&quot; removes all indexed content</li>
                 <li>Individual delete buttons for specific documents</li>
                 <li>Deletions are permanent and cannot be undone</li>
               </ul>
@@ -158,17 +158,16 @@ const InstructionModal: React.FC<InstructionModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 z-50 rounded-2xl shadow-2xl relative w-full max-w-3xl border border-gray-200 dark:border-gray-700 transition-colors duration-200 max-h-[90vh] flex flex-col">
-        <button
-          onClick={onClose}
-          className="group relative absolute right-4 top-4 text-2xl text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95 z-10"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded"></div>
-          <span className="relative">&times;</span>
-        </button>
-        
         {/* Header */}
-        <div className="p-6 pb-0">
+        <div className="flex items-center justify-between p-6 pb-0">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">RAGenie - AI Document Assistant</h2>
+          <button
+            onClick={onClose}
+            className="group relative transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded-full"></div>
+            <span className="relative text-2xl text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors">&times;</span>
+          </button>
         </div>
 
         {/* Tabs */}

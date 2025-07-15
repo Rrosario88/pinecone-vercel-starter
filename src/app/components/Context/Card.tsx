@@ -75,7 +75,7 @@ export const Card: FC<ICardProps> = ({ card, selected, chunkIndex }) => {
               
               {/* Content Preview */}
               {!isExpanded && (
-                <div className="text-gray-600 dark:text-gray-300 text-xs mt-1 select-text cursor-text">
+                <div className="text-gray-600 dark:text-gray-300 text-xs mt-1 select-text cursor-text break-words">
                   {contentPreview}
                 </div>
               )}
@@ -98,7 +98,7 @@ export const Card: FC<ICardProps> = ({ card, selected, chunkIndex }) => {
         <div className="px-4 pb-4">
           <div className="border-t border-gray-300 dark:border-gray-600 pt-3">
             {/* Full Content */}
-            <div className="select-text cursor-text">
+            <div className="select-text cursor-text break-words overflow-hidden">
               <ReactMarkdown
                 components={{
                   img: ({ src, alt, ...props }) => (
@@ -115,7 +115,7 @@ export const Card: FC<ICardProps> = ({ card, selected, chunkIndex }) => {
                     />
                   ),
                   p: ({ children }) => (
-                    <p className="mb-2 leading-relaxed text-gray-700 dark:text-gray-300">
+                    <p className="mb-2 leading-relaxed text-gray-700 dark:text-gray-300 break-words">
                       {children}
                     </p>
                   ),
@@ -125,7 +125,7 @@ export const Card: FC<ICardProps> = ({ card, selected, chunkIndex }) => {
                     </strong>
                   ),
                   code: ({ children }) => (
-                    <code className="bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded text-gray-800 dark:text-gray-200 text-sm font-mono">
+                    <code className="bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded text-gray-800 dark:text-gray-200 text-sm font-mono break-all">
                       {children}
                     </code>
                   )
