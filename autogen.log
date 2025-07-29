@@ -1,0 +1,19 @@
+INFO:     Started server process [25964]
+INFO:     Waiting for application startup.
+INFO:services.pinecone_service:Connected to existing Pinecone index: pdf-rag
+INFO:services.pinecone_service:Pinecone service initialized successfully
+INFO:agents.simple_multi_agent_system:Simple multi-agent system initialized successfully
+INFO:python-service.main:AutoGen RAG service initialized successfully
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:64499 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60451 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60480 - "POST /context/search?query=test+query&top_k=3&min_score=0.3 HTTP/1.1" 405 Method Not Allowed
+INFO:     127.0.0.1:60482 - "GET /documents/inventory HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60484 - "GET /health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:agents.simple_multi_agent_system:Simple multi-agent system cleaned up
+INFO:services.pinecone_service:Pinecone service cleaned up
+INFO:     Application shutdown complete.
+INFO:     Finished server process [25964]

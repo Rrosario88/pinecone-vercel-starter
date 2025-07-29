@@ -1,0 +1,58 @@
+{
+  "name": "RAG Document Assistant Workflow",
+  "description": "Multi-agent workflow for document analysis and Q&A",
+  "agents": [
+    {
+      "name": "DocumentAnalyst",
+      "type": "AssistantAgent",
+      "system_message": "You are a document analysis expert. Your role is to:\n1. Analyze document content and extract key information\n2. Understand user questions about documents\n3. Provide detailed, accurate responses based on document content\n4. Cite sources and provide page references when available\n\nAlways be thorough but concise in your analysis.",
+      "llm_config": {
+        "model": "gpt-4o",
+        "temperature": 0.7,
+        "max_tokens": 1000
+      }
+    },
+    {
+      "name": "QualityReviewer",
+      "type": "AssistantAgent",
+      "system_message": "You are a quality review specialist. Your role is to:\n1. Review responses from the DocumentAnalyst\n2. Check for accuracy and completeness\n3. Suggest improvements or corrections\n4. Ensure proper citation of sources\n5. Verify that responses directly address user questions\n\nProvide constructive feedback to improve response quality.",
+      "llm_config": {
+        "model": "gpt-4o",
+        "temperature": 0.5,
+        "max_tokens": 500
+      }
+    },
+    {
+      "name": "UserProxy",
+      "type": "UserProxyAgent",
+      "human_input_mode": "ALWAYS",
+      "code_execution_config": false,
+      "system_message": "You represent the user asking questions about documents."
+    }
+  ],
+  "workflow": {
+    "type": "sequential",
+    "steps": [
+      {
+        "agent": "UserProxy",
+        "action": "initiate_conversation",
+        "description": "User asks a question about documents"
+      },
+      {
+        "agent": "DocumentAnalyst",
+        "action": "analyze_and_respond",
+        "description": "Analyze documents and provide initial response"
+      },
+      {
+        "agent": "QualityReviewer",
+        "action": "review_response",
+        "description": "Review and improve the response"
+      },
+      {
+        "agent": "DocumentAnalyst",
+        "action": "finalize_response",
+        "description": "Provide final polished response"
+      }
+    ]
+  }
+}

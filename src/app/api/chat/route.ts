@@ -8,162 +8,202 @@ import { Pinecone } from '@pinecone-database/pinecone';
 // Use nodejs runtime for better compatibility with Pinecone SDK
 export const runtime = 'nodejs'
 
+// Helper function to get complete document inventory
+async function getDocumentInventory() {
+  try {
+    const pinecone = new Pinecone();
+    const index = pinecone.Index(process.env.PINECONE_INDEX!);
+    
+    console.log('Getting complete document inventory...');
+    
+    // Query for all PDF documents
+    const pdfNamespace = index.namespace('pdf-documents');
+    let pdfQuery;
+    try {
+      const { getEmbeddings } = await import('@/utils/embeddings');
+      const docEmbedding = await getEmbeddings("document content text");
+      
+      pdfQuery = await pdfNamespace.query({
+        vector: docEmbedding,
+        topK: 10000,
+        includeMetadata: true,
+        filter: { filename: { "$exists": true } }
+      });
+    } catch (error) {
+      console.log('PDF semantic query failed, trying zero vector:', error);
+      pdfQuery = await pdfNamespace.query({
+        vector: new Array(1536).fill(0),
+        topK: 10000,
+        includeMetadata: true,
+        filter: { filename: { "$exists": true } }
+      });
+    }
+
+    // Query for all web documents  
+    const webNamespace = index.namespace('');
+    let webQuery;
+    try {
+      const { getEmbeddings } = await import('@/utils/embeddings');
+      const webEmbedding = await getEmbeddings("webpage content text");
+      
+      webQuery = await webNamespace.query({
+        vector: webEmbedding,
+        topK: 10000,
+        includeMetadata: true,
+        filter: { url: { "$exists": true } }
+      });
+    } catch (error) {
+      console.log('Web semantic query failed, trying zero vector:', error);
+      webQuery = await webNamespace.query({
+        vector: new Array(1536).fill(0),
+        topK: 10000,
+        includeMetadata: true,
+        filter: { url: { "$exists": true } }
+      });
+    }
+
+    // Process documents
+    const pdfDocuments = new Map();
+    const webDocuments = new Map();
+    
+    pdfQuery.matches?.forEach(match => {
+      if (match.metadata?.filename) {
+        if (!pdfDocuments.has(match.metadata.filename)) {
+          pdfDocuments.set(match.metadata.filename, {
+            filename: match.metadata.filename,
+            chunks: 0,
+            uploadId: match.metadata.uploadId,
+            type: 'pdf'
+          });
+        }
+        pdfDocuments.get(match.metadata.filename).chunks++;
+      }
+    });
+
+    webQuery.matches?.forEach(match => {
+      if (match.metadata?.url) {
+        if (!webDocuments.has(match.metadata.url)) {
+          webDocuments.set(match.metadata.url, {
+            url: match.metadata.url,
+            chunks: 0,
+            type: 'web'
+          });
+        }
+        webDocuments.get(match.metadata.url).chunks++;
+      }
+    });
+
+    const inventory = {
+      totalDocuments: pdfDocuments.size + webDocuments.size,
+      totalChunks: (pdfQuery.matches?.length || 0) + (webQuery.matches?.length || 0),
+      pdfDocuments: Array.from(pdfDocuments.values()),
+      webDocuments: Array.from(webDocuments.values())
+    };
+    
+    console.log(`Document inventory: ${inventory.totalDocuments} documents, ${inventory.totalChunks} chunks`);
+    return inventory;
+    
+  } catch (error) {
+    console.error('Error getting document inventory:', error);
+    return {
+      totalDocuments: 0,
+      totalChunks: 0,
+      pdfDocuments: [],
+      webDocuments: []
+    };
+  }
+}
+
 export async function POST(req: Request) {
   try {
+    const { messages, use_autogen = false, agent_config } = await req.json()
+    
+    // Get complete document inventory for ALL requests
+    const documentInventory = await getDocumentInventory();
 
-    const { messages } = await req.json()
+    // If AutoGen is requested, try to use it first
+    if (use_autogen && process.env.AUTOGEN_SERVICE_URL) {
+      try {
+        const autoGenResponse = await fetch(`${process.env.AUTOGEN_SERVICE_URL}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages,
+            use_multi_agent: true,
+            document_inventory: documentInventory, // Pass complete document inventory to AutoGen
+            agent_config: agent_config || {
+              use_researcher: true,
+              use_critic: true,
+              use_summarizer: false,
+              context_strategy: 'comprehensive'
+            }
+          })
+        })
+
+        if (autoGenResponse.ok) {
+          const result = await autoGenResponse.json()
+          // Return streaming response compatible with existing frontend
+          return new Response(result.final_response, {
+            headers: {
+              'Content-Type': 'text/plain',
+              'X-AutoGen-Used': 'true',
+              'X-Agents-Involved': result.agents_involved.join(',')
+            }
+          })
+        }
+      } catch (error) {
+        console.log('AutoGen unavailable, falling back to standard chat:', error)
+      }
+    }
 
     // Get the last message
     const lastMessage = messages[messages.length - 1]
-
-    // Check if this is a document count/inventory question
-    const isInventoryQuestion = /how many|count|list.*document|what.*document.*have|document.*upload/i.test(lastMessage.content);
     
-    let context = '';
+    console.log(`Processing question: "${lastMessage.content}"`);
     
-    if (isInventoryQuestion) {
-      // For inventory questions, get full document list directly
-      try {
-        const pinecone = new Pinecone();
-        const index = pinecone.Index(process.env.PINECONE_INDEX!);
-        
-        // Query for all PDF documents
-        const pdfNamespace = index.namespace('pdf-documents');
-        let pdfQuery;
-        try {
-          pdfQuery = await pdfNamespace.query({
-            vector: new Array(1536).fill(0), // Dummy vector
-            topK: 10000, // Get all documents
-            includeMetadata: true,
-            filter: {
-              filename: { "$exists": true }
-            }
-          });
-        } catch (error) {
-          console.log('PDF query failed:', error);
-          pdfQuery = { matches: [] };
-        }
+    // Always get semantic context for content questions
+    const [pdfContext, webContext] = await Promise.all([
+      getContext(
+        lastMessage.content, 
+        'pdf-documents', // PDF namespace
+        3000, // More tokens for better context
+        0.25, // Lower threshold for better recall
+        true, // Get text
+        12    // More results from PDFs
+      ),
+      getContext(
+        lastMessage.content, 
+        '', // Default namespace for web documents
+        3000, // More tokens for better context
+        0.25, // Lower threshold for better recall
+        true, // Get text
+        12    // More results from web content
+      )
+    ]);
 
-        // Query for all web documents
-        const webNamespace = index.namespace('');
-        let webQuery;
-        try {
-          webQuery = await webNamespace.query({
-            vector: new Array(1536).fill(0), // Dummy vector
-            topK: 10000, // Get all documents
-            includeMetadata: true,
-            filter: {
-              url: { "$exists": true }
-            }
-          });
-        } catch (error) {
-          console.log('Web query failed:', error);
-          webQuery = { matches: [] };
-        }
-
-        // Count unique PDF documents by filename
-        const pdfDocuments = new Set();
-        if (pdfQuery.matches) {
-          pdfQuery.matches.forEach(match => {
-            if (match.metadata?.filename) {
-              pdfDocuments.add(match.metadata.filename);
-            }
-          });
-        }
-
-        // Count unique web documents by URL
-        const webDocuments = new Set();
-        if (webQuery.matches) {
-          webQuery.matches.forEach(match => {
-            if (match.metadata?.url) {
-              webDocuments.add(match.metadata.url);
-            }
-          });
-        }
-
-        // Get document details
-        const pdfDetails = Array.from(pdfDocuments).map(filename => {
-          const chunks = pdfQuery.matches?.filter(m => m.metadata?.filename === filename) || [];
-          return `- ${filename} (${chunks.length} chunks)`;
-        });
-
-        const webDetails = Array.from(webDocuments).map(url => {
-          const chunks = webQuery.matches?.filter(m => m.metadata?.url === url) || [];
-          return `- ${url} (${chunks.length} chunks)`;
-        });
-
-        const totalDocs = pdfDocuments.size + webDocuments.size;
-        const totalChunks = (pdfQuery.matches?.length || 0) + (webQuery.matches?.length || 0);
-
-        if (totalDocs === 0) {
-          context = `DOCUMENT INVENTORY: No documents currently uploaded.
-
-The knowledge base is empty. To get started:
-1. Upload PDF files using the paperclip icon in the chat
-2. Add website URLs using the earth icon in the chat
-
-Once you upload documents, I'll be able to answer questions about their content.`;
-        } else {
-          context = `DOCUMENT INVENTORY:
-
-PDF Documents (${pdfDocuments.size} documents, ${pdfQuery.matches?.length || 0} chunks):
-${pdfDetails.length > 0 ? pdfDetails.join('\n') : '- No PDF documents'}
-
-Web Documents (${webDocuments.size} documents, ${webQuery.matches?.length || 0} chunks):
-${webDetails.length > 0 ? webDetails.join('\n') : '- No web documents'}
-
-TOTAL: ${totalDocs} documents, ${totalChunks} chunks total`;
-        }
-
-      } catch (error) {
-        console.error('Error getting inventory:', error);
-        context = 'Error retrieving document inventory.';
-      }
-    } else {
-      // For content questions, use semantic search as before
-      console.log(`Processing content question: "${lastMessage.content}"`);
-      
-      const [pdfContext, webContext] = await Promise.all([
-        getContext(
-          lastMessage.content, 
-          'pdf-documents', // PDF namespace
-          2000, // Half the tokens for PDFs
-          0.3,  // Even lower threshold for better recall
-          true, // Get text
-          8     // More results from PDFs
-        ),
-        getContext(
-          lastMessage.content, 
-          '', // Default namespace for web documents
-          2000, // Half the tokens for web content
-          0.3,  // Even lower threshold for better recall
-          true, // Get text
-          8     // More results from web content
-        )
-      ]);
-
-      // Combine contexts
-      context = [pdfContext, webContext].filter(c => c && c.trim()).join('\n\n---\n\n');
-      console.log(`Final combined context length: ${context.length} characters`);
-      
-      if (!context || context.trim().length === 0) {
-        // If no semantic matches, try to get any documents as a fallback
-        console.log("No semantic matches found, trying fallback retrieval...");
+    // Combine contexts
+    let context = [pdfContext, webContext].filter(c => c && c.trim() && c !== "No relevant information found in the knowledge base.").join('\n\n---\n\n');
+    console.log(`Semantic context length: ${context.length} characters`);
+    
+    // If no semantic matches found, provide fallback with document awareness
+    if (!context || context.trim().length === 0) {
+      console.log("No semantic matches found, providing document-aware fallback...");
+      if (documentInventory.totalDocuments === 0) {
+        context = "No documents found in the knowledge base. Please upload PDF files or crawl web content first.";
+      } else {
+        // Try broad context retrieval
         try {
           const fallbackContext = await getContext(
-            "document content", // Generic query
+            "document content text information", // Generic query
             'pdf-documents',
-            1000,
+            1500,
             0.0, // No threshold - get anything
             true,
-            3
+            5
           );
           
-          if (fallbackContext && fallbackContext.trim().length > 0) {
-            context = `I couldn't find content specifically matching your question, but I can see you have documents available. Here's a sample of what's in your documents:\n\n${fallbackContext}\n\nPlease try rephrasing your question to be more specific about what you're looking for.`;
-          } else {
-            context = "No documents found in the knowledge base. Please upload PDF files or crawl web content first.";
-          }
+          context = fallbackContext && fallbackContext.trim() ? fallbackContext : 
+            `I have access to ${documentInventory.totalDocuments} documents (${documentInventory.pdfDocuments.length} PDFs, ${documentInventory.webDocuments.length} web sources) but couldn't find specific content matching your question. Please try rephrasing your question or ask about specific documents.`;
         } catch (error) {
           console.error("Fallback retrieval error:", error);
           context = "Error accessing document content. Please try again.";
@@ -171,55 +211,47 @@ TOTAL: ${totalDocs} documents, ${totalChunks} chunks total`;
       }
     }
 
+    // Create internal document awareness for the system (not exposed to user)
+    const availableDocuments = documentInventory.totalDocuments > 0 ? 
+      `AVAILABLE DOCUMENTS:
+PDF Documents: ${documentInventory.pdfDocuments.map(d => d.filename).join(', ')}
+Web Documents: ${documentInventory.webDocuments.map(d => d.url).join(', ')}
+Total: ${documentInventory.totalDocuments} documents with ${documentInventory.totalChunks} content chunks` :
+      `No documents currently available in the knowledge base.`;
+
     const prompt = [
       {
         role: 'system',
-        content: `You are an intelligent document analysis assistant specialized in answering questions about documents and web content.
+        content: `You are an intelligent document analysis assistant. You have access to uploaded PDFs and web content to answer questions accurately.
 
-IMPORTANT INSTRUCTIONS:
-- You have access to extracted content from uploaded PDF documents and crawled web content in the CONTEXT BLOCK below
-- Always prioritize information from the provided context when answering questions
-- Format your responses using clear markdown for excellent readability
-- Use proper headings, bullet points, and numbered lists when appropriate
-- When citing information, reference the specific document/page number or web URL
-- If the context doesn't contain relevant information, clearly state that the information is not available in the uploaded documents or crawled web content
-- Be precise and factual, only using information directly from the context
+${availableDocuments}
 
-CONTEXT BLOCK:
+CONTEXT FROM YOUR KNOWLEDGE BASE:
 ${context}
-END OF CONTEXT BLOCK
 
-FORMATTING GUIDELINES:
-- Use ## for main headings and ### for subheadings
-- Use **bold** for emphasis on key points
-- Use bullet points (-) or numbered lists (1.) for structured information
-- Use > for important quotes or highlights
-- Group related information logically
-- End with a clean source citation section using ### Sources
-- Keep paragraphs concise and scannable
-- Use line breaks between major sections
+INSTRUCTIONS:
+- Answer questions using ONLY the information from the provided context
+- Write naturally and conversationally - avoid mentioning "document inventory" or technical system details
+- When you know what documents are available, reference them naturally (e.g., "Based on your uploaded document [filename]...")
+- For document list questions, provide clean, organized lists without technical jargon
+- Use clear markdown formatting for better readability
+- Always cite sources using document names or URLs
+- If information isn't in your knowledge base, say so clearly
+- Be helpful and suggest related information from available documents when relevant
 
-RESPONSE STRUCTURE TEMPLATE:
-## [Main Topic/Answer]
+FORMATTING:
+- Use ## for main headings and ### for subheadings  
+- Use **bold** for key points
+- Use bullet points (-) or numbered lists (1.) for structure
+- Use > for important quotes
+- Always include a ### Sources section with document references
 
-### Key Points
-- **Point 1**: Description
-- **Point 2**: Description
-
-### Detailed Information
-1. **Topic A** (Page X): Explanation
-2. **Topic B** (Page Y): Explanation
-
-> Important quote or highlight if relevant
-
-### Sources
-- Document: [filename], Pages: [X, Y, Z]
-- Web Content: [URL]
-
-Guidelines:
-- Answer questions based ONLY on the provided context
-- If no relevant information is found, say: "I don't find information about this topic in the uploaded documents or crawled web content."
-- Be helpful, thorough, and well-formatted when the context provides relevant information`,
+RESPONSE STYLE:
+- Natural and conversational
+- Professional but approachable  
+- Focus on being helpful and informative
+- Don't mention system mechanics or technical processes
+- Reference documents naturally in context`,
       },
     ]
 

@@ -7,7 +7,7 @@ export function Button({ className, ...props }: any) {
       }
       {...props}
     >
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md rounded-md"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md rounded-md"></div>
       <span className="relative flex items-center gap-2">{props.children}</span>
     </button>
   );

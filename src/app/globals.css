@@ -25,3 +25,121 @@ body {
     )
     rgb(var(--background-start-rgb));
 }
+
+/* Orange-themed range slider styles */
+.slider-orange {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+
+/* WebKit slider track */
+.slider-orange::-webkit-slider-track {
+  width: 100%;
+  height: 8px;
+  cursor: pointer;
+  background: linear-gradient(90deg, #fed7aa, #f97316, #ea580c);
+  border-radius: 4px;
+  border: none;
+}
+
+/* WebKit slider thumb */
+.slider-orange::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #f97316, #ea580c) !important;
+  cursor: pointer;
+  border: 2px solid white !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  margin-top: -6px;
+}
+
+.slider-orange::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(249, 115, 22, 0.4);
+  background: linear-gradient(45deg, #f97316, #ea580c) !important;
+}
+
+.slider-orange::-webkit-slider-thumb:focus {
+  background: linear-gradient(45deg, #f97316, #ea580c) !important;
+  border: 2px solid white !important;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.3);
+}
+
+.slider-orange::-webkit-slider-thumb:active {
+  background: linear-gradient(45deg, #ea580c, #c2410c) !important;
+  border: 2px solid white !important;
+  transform: scale(0.95);
+}
+
+/* Firefox slider track */
+.slider-orange::-moz-range-track {
+  width: 100%;
+  height: 8px;
+  cursor: pointer;
+  background: linear-gradient(90deg, #fed7aa, #f97316, #ea580c);
+  border-radius: 4px;
+  border: none;
+}
+
+/* Firefox slider thumb */
+.slider-orange::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #f97316, #ea580c) !important;
+  cursor: pointer;
+  border: 2px solid white !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.slider-orange::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(249, 115, 22, 0.4);
+  background: linear-gradient(45deg, #f97316, #ea580c) !important;
+}
+
+.slider-orange::-moz-range-thumb:focus {
+  background: linear-gradient(45deg, #f97316, #ea580c) !important;
+  border: 2px solid white !important;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.3);
+}
+
+.slider-orange::-moz-range-thumb:active {
+  background: linear-gradient(45deg, #ea580c, #c2410c) !important;
+  border: 2px solid white !important;
+  transform: scale(0.95);
+}
+
+/* Focus styles */
+.slider-orange:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.5) !important;
+}
+
+/* Additional overrides to prevent any blue colors */
+.slider-orange:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.5) !important;
+}
+
+/* Override any default browser focus colors */
+.slider-orange {
+  accent-color: #f97316 !important;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .slider-orange::-webkit-slider-track {
+    background: linear-gradient(90deg, #9a3412, #f97316, #ea580c);
+  }
+  
+  .slider-orange::-moz-range-track {
+    background: linear-gradient(90deg, #9a3412, #f97316, #ea580c);
+  }
+}

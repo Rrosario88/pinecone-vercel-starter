@@ -167,7 +167,25 @@ export async function seedPDF(
     const index = pinecone.Index(indexName);
 
     // Get the vector embeddings for the documents
-    const vectors = await Promise.all(documents.flat().map(embedPDFDocument));
+    // Process embeddings sequentially to avoid rate limiting and timeouts
+    const flatDocs = documents.flat();
+    const vectors: PineconeRecord[] = [];
+    
+    for (let i = 0; i < flatDocs.length; i++) {
+      try {
+        console.log(`Processing document ${i + 1}/${flatDocs.length}`);
+        const vector = await embedPDFDocument(flatDocs[i]);
+        vectors.push(vector);
+        
+        // Small delay to avoid rate limiting
+        if (i < flatDocs.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      } catch (error) {
+        console.error(`Failed to embed document ${i + 1}:`, error);
+        throw new Error(`Failed to embed document ${i + 1}: ${error}`);
+      }
+    }
 
     // Use namespace for PDFs to separate from web content
     const namespace = 'pdf-documents';

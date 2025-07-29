@@ -48,16 +48,10 @@ export async function crawlDocument(
           ...documents
         ]);
         
-        if (showToast) {
-          showToast(`Successfully re-crawled and updated content (${documents.length} chunks)`, 'success');
-        }
       } else {
         // For initial crawl: just add new documents
         setCards(prevCards => [...prevCards, ...documents]);
         
-        if (showToast) {
-          showToast(`Successfully crawled website content (${documents.length} chunks)`, 'success');
-        }
       }
       
       // Mark as seeded

@@ -19,6 +19,8 @@ services:
       - PINECONE_ENVIRONMENT=${PINECONE_ENVIRONMENT:-gcp-starter}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      # AutoGen Service Configuration
+      - AUTOGEN_SERVICE_URL=http://autogen-service:8000
       # Application Configuration
       - NEXT_TELEMETRY_DISABLED=1
     volumes:
@@ -28,6 +30,8 @@ services:
       - app_logs:/app/logs
     networks:
       - pdf-rag-network
+    depends_on:
+      - autogen-service
     healthcheck:
       test: ["CMD", "node", "healthcheck.js"]
       interval: 30s
@@ -38,6 +42,39 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.pdf-rag.rule=Host(`localhost`)"
       - "traefik.http.services.pdf-rag.loadbalancer.server.port=3000"
+
+  autogen-service:
+    build:
+      context: ./python-service
+      dockerfile: Dockerfile
+    container_name: autogen-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
+      - PORT=8000
+      # API Keys (shared with main app)
+      - PINECONE_API_KEY=${PINECONE_API_KEY}
+      - PINECONE_ENVIRONMENT=${PINECONE_ENVIRONMENT:-gcp-starter}
+      - PINECONE_INDEX=${PINECONE_INDEX}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+    volumes:
+      # For development - mount source code
+      - ./python-service:/app:ro
+    networks:
+      - pdf-rag-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.autogen.rule=Host(`localhost`) && PathPrefix(`/autogen`)"
+      - "traefik.http.services.autogen.loadbalancer.server.port=8000"
 
 volumes:
   pdf_uploads:

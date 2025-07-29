@@ -1,0 +1,106 @@
+{
+  "name": "RAG Document Assistant Workflow",
+  "description": "Multi-agent workflow for intelligent document analysis and Q&A",
+  "version": "1.0",
+  "agents": [
+    {
+      "name": "ResearcherAgent",
+      "type": "AssistantAgent",
+      "system_message": "You are a research specialist focused on document analysis. Your responsibilities:\n\n1. **Document Search**: Use search tools to find relevant content from uploaded documents\n2. **Context Gathering**: Collect comprehensive information related to user queries\n3. **Source Verification**: Ensure all information comes from reliable document sources\n4. **Relevance Scoring**: Prioritize the most relevant content for the user's question\n\nAlways cite your sources with document names and provide confidence scores for your findings.",
+      "llm_config": {
+        "model": "gpt-4o",
+        "temperature": 0.3,
+        "max_tokens": 1000
+      },
+      "tools": ["search_documents", "get_document_metadata"]
+    },
+    {
+      "name": "AnalystAgent", 
+      "type": "AssistantAgent",
+      "system_message": "You are a document analysis expert. Your role:\n\n1. **Content Analysis**: Process and synthesize information from the ResearcherAgent\n2. **Answer Generation**: Create comprehensive, well-structured responses\n3. **Critical Thinking**: Apply analytical reasoning to document content\n4. **Clarity**: Present complex information in an accessible way\n\nProvide detailed answers with proper formatting, citations, and clear explanations.",
+      "llm_config": {
+        "model": "gpt-4o", 
+        "temperature": 0.7,
+        "max_tokens": 1500
+      }
+    },
+    {
+      "name": "ReviewerAgent",
+      "type": "AssistantAgent",
+      "system_message": "You are a quality assurance specialist. Your tasks:\n\n1. **Accuracy Review**: Verify information accuracy against source documents\n2. **Completeness Check**: Ensure all aspects of the question are addressed\n3. **Citation Validation**: Confirm proper source attribution\n4. **Quality Enhancement**: Suggest improvements for clarity and usefulness\n5. **Final Polish**: Refine the response for optimal user experience\n\nProvide constructive feedback and approve responses only when they meet high quality standards.",
+      "llm_config": {
+        "model": "gpt-4o",
+        "temperature": 0.5, 
+        "max_tokens": 800
+      }
+    },
+    {
+      "name": "UserProxy",
+      "type": "UserProxyAgent",
+      "human_input_mode": "ALWAYS",
+      "code_execution_config": false,
+      "system_message": "You represent users asking questions about their uploaded documents. Initiate conversations and provide feedback on agent responses.",
+      "max_consecutive_auto_reply": 0
+    }
+  ],
+  "workflow": {
+    "type": "group_chat",
+    "max_round": 6,
+    "speaker_selection_method": "round_robin",
+    "allow_repeat_speaker": false,
+    "flow": [
+      {
+        "step": 1,
+        "agent": "UserProxy",
+        "action": "pose_question",
+        "description": "User asks a question about their documents"
+      },
+      {
+        "step": 2, 
+        "agent": "ResearcherAgent",
+        "action": "search_and_gather",
+        "description": "Search documents and gather relevant context"
+      },
+      {
+        "step": 3,
+        "agent": "AnalystAgent", 
+        "action": "analyze_and_respond",
+        "description": "Analyze gathered information and generate comprehensive response"
+      },
+      {
+        "step": 4,
+        "agent": "ReviewerAgent",
+        "action": "review_and_refine", 
+        "description": "Review response quality and suggest improvements"
+      },
+      {
+        "step": 5,
+        "agent": "AnalystAgent",
+        "action": "finalize_response",
+        "description": "Incorporate feedback and provide polished final answer"
+      }
+    ]
+  },
+  "termination": {
+    "type": "keyword",
+    "keywords": ["TERMINATE", "APPROVED", "FINAL_ANSWER"]
+  },
+  "skills": ["search_documents", "summarize_document", "get_document_metadata"],
+  "testing_scenarios": [
+    {
+      "name": "Simple Document Query",
+      "query": "What are the main findings in the uploaded research paper?",
+      "expected_behavior": "ResearcherAgent searches, AnalystAgent summarizes, ReviewerAgent validates"
+    },
+    {
+      "name": "Cross-Document Analysis", 
+      "query": "Compare the methodologies used in documents A and B",
+      "expected_behavior": "Multi-document search and comparative analysis"
+    },
+    {
+      "name": "Specific Data Extraction",
+      "query": "What is the revenue growth mentioned in the financial report?", 
+      "expected_behavior": "Precise data extraction with source citation"
+    }
+  ]
+}

@@ -2,8 +2,9 @@
 
 import React, { FormEvent, ChangeEvent, useState, useRef, useEffect } from "react";
 import Messages from "./Messages";
+import AgentStatusIndicator from "./AgentStatusIndicator";
 import { Message, useChat } from "ai/react";
-import { Paperclip, X, Globe, Plus, Trash2 } from "lucide-react";
+import { Paperclip, X, Globe, Plus, Trash2, Users, Bot } from "lucide-react";
 import { PDFUpload } from "../Context/PDFUpload";
 import { ICard } from "../Context/Card";
 import { IUrlEntry } from "../Context/UrlButton";
@@ -19,6 +20,14 @@ interface ChatProps {
   urlEntries: IUrlEntry[];
   setUrlEntries: React.Dispatch<React.SetStateAction<IUrlEntry[]>>;
   setDocumentCards: React.Dispatch<React.SetStateAction<ICard[]>>;
+  useAutoGen?: boolean;
+  onToggleAutoGen?: () => void;
+  autoGenConfig?: {
+    use_researcher: boolean;
+    use_critic: boolean;
+    use_summarizer: boolean;
+    context_strategy: 'comprehensive' | 'focused' | 'quick';
+  };
 }
 
 const Chat: React.FC<ChatProps> = ({ 
@@ -29,13 +38,58 @@ const Chat: React.FC<ChatProps> = ({
   onWebCrawl,
   urlEntries,
   setUrlEntries,
-  setDocumentCards
+  setDocumentCards,
+  useAutoGen = false,
+  onToggleAutoGen,
+  autoGenConfig = {
+    use_researcher: true,
+    use_critic: true,
+    use_summarizer: false,
+    context_strategy: 'comprehensive'
+  }
 }) => {
-  const { messages, input, handleInputChange, handleSubmit, reload } = useChat();
+  const { messages, input, handleInputChange, handleSubmit, reload, isLoading } = useChat({
+    body: {
+      use_autogen: useAutoGen,
+      agent_config: autoGenConfig
+    }
+  });
   const [showPDFUpload, setShowPDFUpload] = useState(false);
   const [showWebCrawl, setShowWebCrawl] = useState(false);
   const [clearTrigger, setClearTrigger] = useState(0);
+  const [currentAgent, setCurrentAgent] = useState<'researcher' | 'analyst' | 'reviewer' | 'finalizing' | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
   const { showToast, ToastContainer } = useToast();
+  
+  // Agent progression simulation when AutoGen is active
+  useEffect(() => {
+    if (!useAutoGen || !isLoading) {
+      setCurrentAgent(null);
+      setIsGenerating(false);
+      return;
+    }
+
+    setIsGenerating(true);
+    const agentSequence: Array<'researcher' | 'analyst' | 'reviewer' | 'finalizing'> = [
+      'researcher', 'analyst', 'reviewer', 'finalizing'
+    ];
+    
+    let currentIndex = 0;
+    setCurrentAgent(agentSequence[0]);
+    
+    const progressInterval = setInterval(() => {
+      currentIndex++;
+      if (currentIndex < agentSequence.length) {
+        setCurrentAgent(agentSequence[currentIndex]);
+      } else {
+        clearInterval(progressInterval);
+      }
+    }, 2000); // Change agent every 2 seconds
+    
+    return () => {
+      clearInterval(progressInterval);
+    };
+  }, [isLoading, useAutoGen]);
   
   // Persistent upload state
   interface UploadedFile {
@@ -84,7 +138,6 @@ const Chat: React.FC<ChatProps> = ({
 
   const handleWebCrawlSuccess = (documents: ICard[]) => {
     onWebCrawl?.(documents);
-    showToast(`Successfully crawled website content - ${documents.length} chunks extracted`, 'success');
   };
 
   const handleAddUrl = (url: string, title?: string) => {
@@ -96,15 +149,12 @@ const Chat: React.FC<ChatProps> = ({
         loading: false,
       };
       setUrlEntries(prev => [...prev, newEntry]);
-      showToast('URL added successfully!', 'success');
     } else if (urlEntries.some(entry => entry.url === url)) {
-      showToast('This URL is already added', 'warning');
     }
   };
 
   const handleRemoveUrl = (index: number) => {
     setUrlEntries(prev => prev.filter((_, i) => i !== index));
-    showToast('URL removed', 'info');
   };
 
   const handleCrawlUrl = async (url: string) => {
@@ -133,9 +183,19 @@ const Chat: React.FC<ChatProps> = ({
 
 
   return (
-    <div id="chat" className="flex flex-col h-full w-full">
+    <div id="chat" className="flex flex-col h-full w-full max-h-full overflow-hidden">
       <ToastContainer />
-      <Messages messages={messages} onRegenerate={handleRegenerate} />
+      <div className="flex-1 min-h-0 overflow-hidden">
+        {/* Agent Status Indicator */}
+        <div className="p-4 pb-0">
+          <AgentStatusIndicator 
+            isActive={useAutoGen}
+            currentAgent={currentAgent}
+            isGenerating={isGenerating}
+          />
+        </div>
+        <Messages messages={messages} onRegenerate={handleRegenerate} />
+      </div>
       
       {/* PDF Upload Modal */}
       {showPDFUpload && (
@@ -147,8 +207,8 @@ const Chat: React.FC<ChatProps> = ({
                 onClick={() => setShowPDFUpload(false)}
                 className="group relative transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg"></div>
-                <X size={20} className="relative text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" />
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-400/30 to-red-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg"></div>
+                <X size={20} className="relative text-gray-500 hover:text-orange-500 dark:text-gray-400 dark:hover:text-orange-400 transition-colors" />
               </button>
             </div>
             <PDFUpload
@@ -178,8 +238,8 @@ const Chat: React.FC<ChatProps> = ({
                 onClick={() => setShowWebCrawl(false)}
                 className="group relative transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg"></div>
-                <X size={20} className="relative text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" />
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-400/30 to-red-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg"></div>
+                <X size={20} className="relative text-gray-500 hover:text-orange-500 dark:text-gray-400 dark:hover:text-orange-400 transition-colors" />
               </button>
             </div>
             
@@ -221,7 +281,7 @@ const Chat: React.FC<ChatProps> = ({
                     }}
                     className="group relative px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300 ease-in-out hover:scale-105 active:scale-95"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded-lg"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-orange-400/30 to-red-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded-lg"></div>
                     <Plus size={16} className="relative" />
                   </button>
                 </div>
@@ -265,7 +325,7 @@ const Chat: React.FC<ChatProps> = ({
                               }`}
                               title={entry.seeded ? "Re-crawl this URL" : "Crawl this URL"}
                             >
-                              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded"></div>
+                              <div className="absolute inset-0 bg-gradient-to-r from-orange-400/30 to-red-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded"></div>
                               <span className="relative">{entry.seeded ? 'Re-crawl' : 'Crawl'}</span>
                             </button>
                           )}
@@ -274,7 +334,7 @@ const Chat: React.FC<ChatProps> = ({
                             className="group relative p-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
                             title="Remove URL"
                           >
-                            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded"></div>
+                            <div className="absolute inset-0 bg-gradient-to-r from-orange-400/30 to-red-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded"></div>
                             <Trash2 size={14} className="relative" />
                           </button>
                         </div>
@@ -296,20 +356,63 @@ const Chat: React.FC<ChatProps> = ({
         </div>
       )}
 
+
       <form
         onSubmit={handleSubmit}
-        className="mt-6 relative bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-700 flex-shrink-0 shadow-sm transition-colors duration-200"
+        className={`flex-shrink-0 mt-4 relative bg-gray-50 dark:bg-gray-800 rounded-xl border shadow-sm transition-all duration-300 ${
+          useAutoGen 
+            ? 'border-orange-400 dark:border-orange-500 shadow-orange-500/20 shadow-lg hover:shadow-orange-500/30 hover:shadow-xl' 
+            : 'border-gray-300 dark:border-gray-700'
+        }`}
       >
+        {/* Fire glow effect when AutoGen is active */}
+        {useAutoGen && (
+          <>
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-400 via-red-500 to-yellow-400 rounded-xl opacity-30 blur-sm animate-pulse"></div>
+            <div className="absolute -inset-1 bg-gradient-to-r from-orange-300 via-red-400 to-yellow-300 rounded-xl opacity-0 hover:opacity-20 blur-md transition-opacity duration-300"></div>
+          </>
+        )}
+        
         <input
           type="text"
-          placeholder="Ask about your uploaded PDFs..."
-          className="w-full py-4 pl-6 pr-20 text-gray-900 dark:text-gray-100 bg-transparent rounded-xl leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+          placeholder={useAutoGen ? "Ask your AI agent team..." : "Ask about your uploaded PDFs..."}
+          className={`relative w-full py-4 pl-6 pr-24 text-gray-900 dark:text-gray-100 bg-transparent rounded-xl leading-tight focus:outline-none transition-all duration-300 ${
+            useAutoGen
+              ? 'focus:ring-2 focus:ring-orange-400 focus:shadow-orange-500/20 focus:shadow-lg'
+              : 'focus:ring-2 focus:ring-blue-500'
+          }`}
           value={input}
           onChange={handleInputChange}
         />
         
         {/* Action Buttons */}
         <div className="absolute right-12 top-1/2 -translate-y-1/2 flex gap-1">
+          {/* AutoGen Toggle Button */}
+          <button
+            type="button"
+            onClick={onToggleAutoGen}
+            className={`group relative p-2 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95 ${
+              useAutoGen ? 'bg-orange-500/10 rounded' : ''
+            }`}
+            title={useAutoGen ? "Multi-Agent Team: ON" : "Single Agent Mode: OFF"}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md"></div>
+            <div className={`relative transition-colors ${
+              useAutoGen 
+                ? 'text-orange-500 dark:text-orange-400' 
+                : 'text-gray-500 group-hover:text-orange-500 dark:text-gray-400 dark:group-hover:text-orange-400'
+            }`}>
+              {useAutoGen ? (
+                <div className="relative">
+                  <Users size={18} className="relative" />
+                  <Bot size={10} className="absolute -top-1 -right-1 text-orange-600 dark:text-orange-300" />
+                </div>
+              ) : (
+                <Bot size={18} />
+              )}
+            </div>
+          </button>
+
           {/* Web Crawl Button */}
           <button
             type="button"
@@ -317,8 +420,8 @@ const Chat: React.FC<ChatProps> = ({
             className="group relative p-2 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
             title="Web Sources"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md"></div>
-            <Globe size={18} className="relative text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" />
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md"></div>
+            <Globe size={18} className="relative text-gray-500 group-hover:text-orange-500 dark:text-gray-400 dark:group-hover:text-orange-400 transition-colors" />
           </button>
           
           {/* PDF Upload Button */}
@@ -328,14 +431,20 @@ const Chat: React.FC<ChatProps> = ({
             className="group relative p-2 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
             title="Upload PDF"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md"></div>
-            <Paperclip size={18} className="relative text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" />
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md"></div>
+            <Paperclip size={18} className="relative text-gray-500 group-hover:text-orange-500 dark:text-gray-400 dark:group-hover:text-orange-400 transition-colors" />
           </button>
         </div>
         
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-xs pointer-events-none">
-          ⮐
-        </span>
+        {/* Submit indicator - changes based on AutoGen status */}
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
+          {useAutoGen && (
+            <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" title="Multi-Agent Analysis Enabled"></div>
+          )}
+          <span className={`text-xs ${useAutoGen ? 'text-orange-400' : 'text-gray-400 dark:text-gray-500'}`}>
+            ⮐
+          </span>
+        </div>
       </form>
     </div>
   );

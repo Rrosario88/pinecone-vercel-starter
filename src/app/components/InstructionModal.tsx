@@ -165,8 +165,8 @@ const InstructionModal: React.FC<InstructionModalProps> = ({
             onClick={onClose}
             className="group relative transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded-full"></div>
-            <span className="relative text-2xl text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors">&times;</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-400/30 to-red-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded-full"></div>
+            <span className="relative text-2xl text-gray-400 hover:text-orange-500 dark:text-gray-500 dark:hover:text-orange-400 transition-colors">&times;</span>
           </button>
         </div>
 

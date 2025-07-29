@@ -67,7 +67,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
             onClick={onCancel}
             className="group relative flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100/80 dark:bg-gray-700/80 backdrop-blur-sm border border-gray-300/50 dark:border-gray-600/50 rounded-lg transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md rounded-lg"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md rounded-lg"></div>
             <span className="relative">{cancelText}</span>
           </button>
           <button

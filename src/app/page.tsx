@@ -29,6 +29,15 @@ const Page: React.FC = () => {
   
   // Shared document cards state
   const [documentCards, setDocumentCards] = useState<any[]>([]);
+  
+  // AutoGen state
+  const [useAutoGen, setUseAutoGen] = useState(false);
+  const [autoGenConfig, setAutoGenConfig] = useState({
+    use_researcher: true,
+    use_critic: true,
+    use_summarizer: false,
+    context_strategy: 'comprehensive' as 'comprehensive' | 'focused' | 'quick'
+  });
 
   const { messages, input, handleInputChange, handleSubmit } = useChat({
     onFinish: async () => {
@@ -67,10 +76,10 @@ const Page: React.FC = () => {
     <>
       <button
         onClick={() => setModalOpen(true)}
-        className="group fixed left-4 top-4 z-50 p-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-full shadow-lg border border-gray-200/50 dark:border-gray-700/50 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all duration-300 ease-in-out hover:scale-105 active:scale-95"
+        className="group fixed left-4 top-4 z-50 p-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-full shadow-lg border border-gray-200/50 dark:border-gray-700/50 text-gray-700 dark:text-gray-300 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95"
         title="Help & Instructions"
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md rounded-full"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md rounded-full"></div>
         <svg className="relative w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
@@ -83,6 +92,10 @@ const Page: React.FC = () => {
         onSplittingMethodChange={setSplittingMethod}
         onChunkSizeChange={setChunkSize}
         onOverlapChange={setOverlap}
+        useAutoGen={useAutoGen}
+        onUseAutoGenChange={setUseAutoGen}
+        autoGenConfig={autoGenConfig}
+        onAutoGenConfigChange={setAutoGenConfig}
       />
       
       <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
@@ -95,7 +108,7 @@ const Page: React.FC = () => {
         />
       
       <div className="flex flex-1 overflow-hidden relative gap-4 px-4 pb-4">
-        <div className="flex-1 min-w-0 h-full">
+        <div className="flex-1 min-w-0 flex flex-col h-[calc(100vh-200px)]">
           <Chat 
             splittingMethod={splittingMethod}
             chunkSize={chunkSize}
@@ -121,12 +134,15 @@ const Page: React.FC = () => {
             urlEntries={urlEntries}
             setUrlEntries={setUrlEntries}
             setDocumentCards={setDocumentCards}
+            useAutoGen={useAutoGen}
+            onToggleAutoGen={() => setUseAutoGen(!useAutoGen)}
+            autoGenConfig={autoGenConfig}
           />
         </div>
         
-        <div className="hidden lg:flex w-96 flex-col bg-gray-200 dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-700 transition-colors duration-200">
+        <div className="hidden lg:flex w-96 flex-col bg-gray-200 dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-700 transition-colors duration-200 h-[calc(100vh-200px)]">
           <Context 
-            className="w-full" 
+            className="w-full h-full" 
             selected={context}
             splittingMethod={splittingMethod}
             chunkSize={chunkSize}

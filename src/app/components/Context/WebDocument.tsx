@@ -58,7 +58,7 @@ export const WebDocument: FC<IWebDocumentProps> = ({ url, chunks, selected, onDe
               className="group relative p-1 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
               title={`Delete ${getDisplayName(url)}`}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md"></div>
               <Trash2 size={14} className="relative text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 transition-colors" />
             </button>
           )}
@@ -68,7 +68,7 @@ export const WebDocument: FC<IWebDocumentProps> = ({ url, chunks, selected, onDe
             className="group relative flex-shrink-0 cursor-pointer p-1 rounded transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
             onClick={handleToggleChunks}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md"></div>
             {isExpanded ? (
               <ChevronDown size={16} className="relative text-gray-500 dark:text-gray-400 transition-colors" />
             ) : (

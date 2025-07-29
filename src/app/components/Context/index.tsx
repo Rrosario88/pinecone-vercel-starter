@@ -7,6 +7,7 @@ import { clearIndex, crawlDocument } from "./utils";
 import { Button } from "./Button";
 import { useToast } from "../Toast";
 import { ConfirmDialog } from "../ConfirmDialog";
+import { motion, AnimatePresence } from "framer-motion";
 interface ContextProps {
   className: string;
   selected: string[] | null;
@@ -32,6 +33,7 @@ export const Context: React.FC<ContextProps> = ({
 }) => {
   const [clearTrigger, setClearTrigger] = useState(0);
   const [statusMessage, setStatusMessage] = useState<string>('');
+  const [showFireEffect, setShowFireEffect] = useState(false);
   const { showToast } = useToast();
   
   // Confirmation dialog state
@@ -183,9 +185,13 @@ export const Context: React.FC<ContextProps> = ({
 
   // Auto-sync when URL entries change (after web crawling)
   useEffect(() => {
-    // Small delay to allow Pinecone to index
-    const timer = setTimeout(syncWithPinecone, 1000);
-    return () => clearTimeout(timer);
+    // Only sync if there are seeded URL entries (not after clearing)
+    const hasSeededEntries = urlEntries.some(entry => entry.seeded);
+    if (hasSeededEntries) {
+      // Small delay to allow Pinecone to index
+      const timer = setTimeout(syncWithPinecone, 1000);
+      return () => clearTimeout(timer);
+    }
   }, [urlEntries]);
 
   const DropdownLabel: React.FC<
@@ -218,7 +224,7 @@ export const Context: React.FC<ContextProps> = ({
 
   return (
     <div
-      className={`flex flex-col rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 w-full transition-colors duration-200 h-full ${className}`}
+      className={`flex flex-col w-full h-full ${className} relative`}
     >
       {/* Confirmation Dialog */}
       <ConfirmDialog
@@ -229,7 +235,7 @@ export const Context: React.FC<ContextProps> = ({
         onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
       />
       {/* Fixed Header Section */}
-      <div className="flex-shrink-0 bg-gray-50 dark:bg-gray-800 rounded-t-xl border-b border-gray-300 dark:border-gray-700">
+      <div className="flex-shrink-0 bg-gray-200 dark:bg-gray-800 rounded-t-xl border-b border-gray-300 dark:border-gray-700">
         {/* Header */}
         <div className="w-full p-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Document Sources</h3>
@@ -242,21 +248,30 @@ export const Context: React.FC<ContextProps> = ({
         
         <div className="w-full px-4 pb-4">
           {/* Clear Button */}
-          <button
-            className="group relative w-full py-2.5 px-4 rounded-lg font-medium text-gray-700 dark:text-gray-300 bg-gray-100/80 dark:bg-gray-700/80 border border-gray-300/50 dark:border-gray-600/50 backdrop-blur-sm transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 hover:bg-gray-200/80 dark:hover:bg-gray-600/80"
-            onClick={async () => {
-              await clearIndex(setUrlEntries, setDocumentCards, setStatusMessage, showToast);
-              setClearTrigger(prev => prev + 1); // Trigger clear in PDFUpload
-            }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-gray-400/20 to-gray-600/20 opacity-0 group-hover:opacity-50 transition-opacity duration-300 blur-md rounded-lg"></div>
-            <span className="relative flex items-center justify-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-              Clear Documents
-            </span>
-          </button>
+          <div className="relative">
+            <button
+              className="group relative w-full py-2.5 px-4 rounded-lg font-medium text-gray-700 dark:text-gray-300 bg-gray-100/80 dark:bg-gray-700/80 border border-gray-300/50 dark:border-gray-600/50 backdrop-blur-sm transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 hover:bg-gray-200/80 dark:hover:bg-gray-600/80"
+              onClick={async () => {
+                setShowFireEffect(true);
+                setTimeout(() => setShowFireEffect(false), 5500);
+                
+                // Delay clearing documents by 1 second to let fire start
+                setTimeout(async () => {
+                  await clearIndex(setUrlEntries, setDocumentCards, setStatusMessage, showToast);
+                  setClearTrigger(prev => prev + 1); // Trigger clear in PDFUpload
+                }, 1000);
+              }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-400/20 to-gray-600/20 opacity-0 group-hover:opacity-50 transition-opacity duration-300 blur-md rounded-lg"></div>
+              <span className="relative flex items-center justify-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Clear Documents
+              </span>
+            </button>
+            
+          </div>
           
           {/* Status Message */}
           {statusMessage && (
@@ -270,7 +285,7 @@ export const Context: React.FC<ContextProps> = ({
       </div>
 
       {/* Scrollable Cards Section */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-h-0">
         <div className="p-4 space-y-4">
           {(() => {
             // Group documents by type and filename+uploadId/URL
@@ -333,6 +348,188 @@ export const Context: React.FC<ContextProps> = ({
           )}
         </div>
       </div>
+
+      {/* Fire Effect - Over Document Pane */}
+      <AnimatePresence>
+        {showFireEffect && (
+          <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden"
+            style={{ mixBlendMode: 'normal' }}>
+                  {/* Document area flames */}
+                  {[...Array(20)].map((_, i) => (
+                    <motion.div
+                      key={`doc-flame-${i}`}
+                      className="absolute"
+                      style={{
+                        left: `${5 + (i % 10) * 9}%`,
+                        top: `${60 + Math.floor(i / 10) * 15 + Math.random() * 10}%`,
+                        width: `${8 + Math.random() * 6}px`,
+                        height: `${20 + Math.random() * 15}px`,
+                      }}
+                      initial={{ 
+                        scaleY: 0, 
+                        opacity: 0,
+                        rotate: Math.random() * 20 - 10 
+                      }}
+                      animate={{ 
+                        scaleY: [0, 2, 1.8, 2.2, 1.5, 1.0, 0.6, 0.3, 0.1, 0],
+                        opacity: [0, 0.9, 0.8, 1, 0.8, 0.6, 0.4, 0.2, 0.1, 0],
+                        rotate: [
+                          Math.random() * 20 - 10,
+                          Math.random() * 30 - 15,
+                          Math.random() * 25 - 12.5,
+                          Math.random() * 35 - 17.5,
+                          Math.random() * 20 - 10,
+                          Math.random() * 15 - 7.5,
+                          Math.random() * 10 - 5,
+                          Math.random() * 5 - 2.5,
+                          Math.random() * 3 - 1.5,
+                          0
+                        ],
+                        x: [0, Math.random() * 10 - 5, Math.random() * 15 - 7.5, Math.random() * 8 - 4, Math.random() * 5 - 2.5, 0]
+                      }}
+                      transition={{ 
+                        duration: 5,
+                        delay: i * 0.1,
+                        ease: [0.4, 0, 0.2, 1]
+                      }}
+                    >
+                      <div 
+                        className="w-full h-full rounded-full blur-sm"
+                        style={{
+                          background: `linear-gradient(to top, 
+                            rgb(220, 38, 38) 0%, 
+                            rgb(234, 88, 12) 40%, 
+                            rgb(245, 158, 11) 70%, 
+                            rgb(253, 224, 71) 90%, 
+                            transparent 100%)`
+                        }}
+                      />
+                    </motion.div>
+                  ))}
+
+                  {/* Large document flames */}
+                  {[...Array(8)].map((_, i) => (
+                    <motion.div
+                      key={`large-flame-${i}`}
+                      className="absolute"
+                      style={{
+                        left: `${10 + i * 11}%`,
+                        top: `${65 + Math.random() * 25}%`,
+                        width: `${15 + Math.random() * 10}px`,
+                        height: `${35 + Math.random() * 20}px`,
+                      }}
+                      initial={{ 
+                        scaleY: 0, 
+                        opacity: 0,
+                        rotate: Math.random() * 30 - 15 
+                      }}
+                      animate={{ 
+                        scaleY: [0, 2.5, 2.2, 3, 2.5, 2.0, 1.5, 1.0, 0.6, 0.3, 0.1, 0],
+                        opacity: [0, 1, 0.9, 1, 0.9, 0.8, 0.6, 0.4, 0.3, 0.15, 0.05, 0],
+                        rotate: [
+                          Math.random() * 30 - 15,
+                          Math.random() * 40 - 20,
+                          Math.random() * 35 - 17.5,
+                          Math.random() * 45 - 22.5,
+                          Math.random() * 30 - 15,
+                          Math.random() * 25 - 12.5,
+                          Math.random() * 15 - 7.5,
+                          Math.random() * 10 - 5,
+                          Math.random() * 5 - 2.5,
+                          Math.random() * 3 - 1.5,
+                          Math.random() * 2 - 1,
+                          0
+                        ],
+                        x: [0, Math.random() * 20 - 10, Math.random() * 25 - 12.5, Math.random() * 15 - 7.5, Math.random() * 8 - 4, 0]
+                      }}
+                      transition={{ 
+                        duration: 5.5,
+                        delay: 0.5 + i * 0.15,
+                        ease: [0.4, 0, 0.2, 1]
+                      }}
+                    >
+                      <div 
+                        className="w-full h-full rounded-full blur-md"
+                        style={{
+                          background: `linear-gradient(to top, 
+                            rgb(220, 38, 38) 0%, 
+                            rgb(234, 88, 12) 40%, 
+                            rgb(245, 158, 11) 70%, 
+                            rgb(250, 204, 21) 100%)`
+                        }}
+                      />
+                    </motion.div>
+                  ))}
+                  
+                  {/* Flying embers and sparks */}
+                  {[...Array(25)].map((_, i) => (
+                    <motion.div
+                      key={`ember-${i}`}
+                      className="absolute rounded-full"
+                      style={{
+                        left: `${Math.random() * 80 + 10}%`,
+                        top: `${Math.random() * 40 + 50}%`,
+                        width: `${2 + Math.random() * 3}px`,
+                        height: `${2 + Math.random() * 3}px`,
+                        background: Math.random() > 0.5 ? '#fb923c' : '#f59e0b'
+                      }}
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ 
+                        opacity: [0, 1, 0.9, 0.7, 0.5, 0.3, 0.15, 0.05, 0],
+                        scale: [0, 3, 2.8, 2.2, 1.5, 1.0, 0.6, 0.3, 0],
+                        y: [0, -60 - Math.random() * 80, -80 - Math.random() * 60, -100 - Math.random() * 40],
+                        x: [0, Math.random() * 60 - 30, Math.random() * 40 - 20, Math.random() * 20 - 10],
+                        rotate: [0, 360 * (Math.random() > 0.5 ? 1 : -1), 540 * (Math.random() > 0.5 ? 1 : -1), 720 * (Math.random() > 0.5 ? 1 : -1)]
+                      }}
+                      transition={{ 
+                        duration: 4.5 + Math.random() * 1.5,
+                        delay: Math.random() * 2,
+                        ease: [0.4, 0, 0.2, 1]
+                      }}
+                    />
+                  ))}
+                  
+                  {/* Smoke and ash */}
+                  {[...Array(15)].map((_, i) => (
+                    <motion.div
+                      key={`smoke-${i}`}
+                      className="absolute rounded-full opacity-30"
+                      style={{
+                        left: `${Math.random() * 70 + 15}%`,
+                        top: `${Math.random() * 30 + 60}%`,
+                        width: `${8 + Math.random() * 12}px`,
+                        height: `${8 + Math.random() * 12}px`,
+                        background: `rgba(${100 + Math.random() * 50}, ${100 + Math.random() * 50}, ${100 + Math.random() * 50}, 0.6)`
+                      }}
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ 
+                        opacity: [0, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05, 0.02, 0],
+                        scale: [0, 3, 5, 7, 9, 11, 13, 15, 17, 20],
+                        y: [0, -80 - Math.random() * 40, -120 - Math.random() * 60, -150 - Math.random() * 40],
+                        x: [0, Math.random() * 30 - 15, Math.random() * 50 - 25, Math.random() * 70 - 35]
+                      }}
+                      transition={{ 
+                        duration: 6 + Math.random() * 2,
+                        delay: 1.5 + Math.random() * 1,
+                        ease: [0.4, 0, 0.2, 1]
+                      }}
+                    />
+                  ))}
+
+                  {/* Screen overlay for burning effect */}
+                  <motion.div
+                    className="absolute inset-0"
+                    style={{
+                      background: 'radial-gradient(circle at 50% 75%, rgba(234, 88, 12, 0.25) 0%, rgba(220, 38, 38, 0.15) 40%, transparent 60%)',
+                      top: '50%'
+                    }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: [0, 0.8, 0.7, 0.6, 0.4, 0.3, 0.2, 0.1, 0.05, 0] }}
+                    transition={{ duration: 5, ease: [0.4, 0, 0.2, 1] }}
+                  />
+                </div>
+              )}
+            </AnimatePresence>
     </div>
   );
 };

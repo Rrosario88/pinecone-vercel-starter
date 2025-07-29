@@ -1,6 +1,7 @@
 import { Message } from "ai";
 import { useRef, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface MessagesProps {
   messages: Message[];
@@ -13,8 +14,28 @@ export default function Messages({ messages, onRegenerate }: MessagesProps) {
   
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const scrollToBottom = () => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+    
+    // Immediate scroll
+    scrollToBottom();
+    
+    // Additional scroll after a brief delay to handle any layout changes
+    const timeoutId = setTimeout(scrollToBottom, 100);
+    
+    return () => clearTimeout(timeoutId);
   }, [messages]);
+  
+  // Also scroll when messages array length changes (new message added)
+  useEffect(() => {
+    if (messages.length > 0) {
+      const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      };
+      scrollToBottom();
+    }
+  }, [messages.length]);
 
   const copyToClipboard = async (content: string, index: number) => {
     try {
@@ -33,8 +54,8 @@ export default function Messages({ messages, onRegenerate }: MessagesProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-700 overflow-y-auto flex-grow flex flex-col max-h-[70vh] min-h-[400px] transition-colors duration-200 shadow-sm">
-      <div className="flex-1 space-y-6 p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-700 h-full max-h-full flex flex-col transition-colors duration-200 shadow-sm overflow-hidden">
+      <div className="flex-1 overflow-y-auto space-y-6 p-6 min-h-0">
         {messages.map((msg, index) => (
           <div
             key={index}
@@ -56,6 +77,7 @@ export default function Messages({ messages, onRegenerate }: MessagesProps) {
               {msg.role === "assistant" ? (
                 <>
                   <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
                     components={{
                       img: ({ src, alt, ...props }) => (
                         <img
@@ -114,10 +136,46 @@ export default function Messages({ messages, onRegenerate }: MessagesProps) {
                         <code className="bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded text-gray-800 dark:text-gray-200 text-sm font-mono">
                           {children}
                         </code>
-                      )
+                      ),
+                      table: ({ children }) => (
+                        <div className="overflow-x-auto my-4 -mx-2">
+                          <table className="w-full border-collapse border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm">
+                            {children}
+                          </table>
+                        </div>
+                      ),
+                      thead: ({ children }) => (
+                        <thead className="bg-gray-100 dark:bg-gray-700">
+                          {children}
+                        </thead>
+                      ),
+                      tbody: ({ children }) => (
+                        <tbody className="bg-white dark:bg-gray-800">
+                          {children}
+                        </tbody>
+                      ),
+                      tr: ({ children }) => (
+                        <tr className="border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                          {children}
+                        </tr>
+                      ),
+                      th: ({ children }) => (
+                        <th className="border border-gray-300 dark:border-gray-600 px-2 py-1.5 text-left font-semibold text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 text-xs">
+                          {children}
+                        </th>
+                      ),
+                      td: ({ children }) => (
+                        <td className="border border-gray-300 dark:border-gray-600 px-2 py-1.5 text-gray-700 dark:text-gray-300 text-xs">
+                          {children}
+                        </td>
+                      ),
+                      br: () => <br />,
+                      // Handle HTML elements that might appear in the content
+                      div: ({ children }) => <div>{children}</div>,
+                      span: ({ children }) => <span>{children}</span>
                     }}
                   >
-                    {msg.content}
+                    {msg.content.replace(/<br\s*\/?>/gi, '\n\n')}
                   </ReactMarkdown>
                   
                   {/* Quick Actions Menu - Subtle floating menu */}
@@ -129,7 +187,7 @@ export default function Messages({ messages, onRegenerate }: MessagesProps) {
                         className="group/btn relative p-1.5 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
                         title="Copy to clipboard"
                       >
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover/btn:opacity-70 transition-opacity duration-300 blur-md"></div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 opacity-0 group-hover/btn:opacity-70 transition-opacity duration-300 blur-md"></div>
                         {copiedIndex === index ? (
                           // Check icon
                           <svg className="relative w-3.5 h-3.5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,7 +195,7 @@ export default function Messages({ messages, onRegenerate }: MessagesProps) {
                           </svg>
                         ) : (
                           // Copy icon
-                          <svg className="relative w-3.5 h-3.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="relative w-3.5 h-3.5 text-gray-500 hover:text-orange-500 dark:text-gray-400 dark:hover:text-orange-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                           </svg>
                         )}
@@ -149,9 +207,9 @@ export default function Messages({ messages, onRegenerate }: MessagesProps) {
                         className="group/btn relative p-1.5 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
                         title="Regenerate response"
                       >
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover/btn:opacity-70 transition-opacity duration-300 blur-md"></div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 opacity-0 group-hover/btn:opacity-70 transition-opacity duration-300 blur-md"></div>
                         {/* Refresh icon */}
-                        <svg className="relative w-3.5 h-3.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="relative w-3.5 h-3.5 text-gray-500 hover:text-orange-500 dark:text-gray-400 dark:hover:text-orange-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
                       </button>
