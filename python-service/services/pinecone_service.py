@@ -76,29 +76,26 @@ class PineconeService:
             query_embedding = await self.get_embeddings(query)
             
             # Query Pinecone
-            if namespace:
-                pinecone_namespace = self.index.namespace(namespace)
-            else:
-                pinecone_namespace = self.index.namespace("")
-            
-            query_result = await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: pinecone_namespace.query(
+            def query_pinecone():
+                return self.index.query(
                     vector=query_embedding,
                     top_k=top_k,
-                    include_metadata=True
+                    include_metadata=True,
+                    namespace=namespace
                 )
-            )
+            
+            query_result = await asyncio.get_event_loop().run_in_executor(None, query_pinecone)
             
             # Filter results by score and format
             results = []
-            for match in query_result.matches or []:
-                if match.score and match.score > min_score:
+            for match in query_result.get('matches', []):
+                if match.get('score', 0) > min_score:
+                    metadata = match.get('metadata', {})
                     result = {
-                        "content": match.metadata.get("chunk", "") if match.metadata else "",
-                        "score": match.score,
-                        "source": self._get_source_info(match.metadata),
-                        "metadata": match.metadata or {}
+                        "content": metadata.get("chunk", ""),
+                        "score": match.get('score', 0),
+                        "source": self._get_source_info(metadata),
+                        "metadata": metadata
                     }
                     results.append(result)
             
@@ -153,31 +150,28 @@ class PineconeService:
             # Use dummy vector to get all documents
             dummy_vector = [0.0] * 1536  # Assuming 1536-dimensional embeddings
             
-            if namespace:
-                pinecone_namespace = self.index.namespace(namespace)
-            else:
-                pinecone_namespace = self.index.namespace("")
-            
-            query_result = await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: pinecone_namespace.query(
+            def query_inventory():
+                return self.index.query(
                     vector=dummy_vector,
                     top_k=10000,  # Get as many as possible
-                    include_metadata=True
+                    include_metadata=True,
+                    namespace=namespace
                 )
-            )
+            
+            query_result = await asyncio.get_event_loop().run_in_executor(None, query_inventory)
             
             # Process results to get document inventory
             documents = {}
             total_chunks = 0
             
-            for match in query_result.matches or []:
-                if match.metadata:
-                    source = self._get_source_info(match.metadata)
+            for match in query_result.get('matches', []):
+                metadata = match.get('metadata', {})
+                if metadata:
+                    source = self._get_source_info(metadata)
                     if source not in documents:
                         documents[source] = {
                             "chunks": 0,
-                            "metadata": match.metadata
+                            "metadata": metadata
                         }
                     documents[source]["chunks"] += 1
                     total_chunks += 1

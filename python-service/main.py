@@ -10,7 +10,19 @@ import json
 import logging
 from dotenv import load_dotenv
 
-from agents.simple_multi_agent_system import SimpleMultiAgentRAGSystem as MultiAgentRAGSystem
+# Configure logging first
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Import real multi-agent system
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), 'agents'))
+
+# Import the real multi-agent system
+from real_multi_agent_system import RealMultiAgentRAGSystem as MultiAgentRAGSystem
+logger.info("Successfully imported real AutoGen multi-agent system")
+
 from services.pinecone_service import PineconeService
 from models.chat_models import ChatRequest, ChatResponse, AgentMessage
 
@@ -39,7 +51,7 @@ async def lifespan(app: FastAPI):
         multi_agent_system = MultiAgentRAGSystem(pinecone_service)
         await multi_agent_system.initialize()
         
-        logger.info("AutoGen RAG service initialized successfully")
+        logger.info("Real AutoGen RAG service initialized successfully")
         yield
         
     except Exception as e:
@@ -54,9 +66,9 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app with lifespan
 app = FastAPI(
-    title="AutoGen RAG Service",
+    title="Real AutoGen RAG Service",
     description="Multi-agent RAG system using Microsoft AutoGen",
-    version="1.0.0",
+    version="2.0.0",
     lifespan=lifespan
 )
 
@@ -73,9 +85,10 @@ app.add_middleware(
 async def root():
     """Root endpoint with service information"""
     return {
-        "service": "AutoGen RAG Service",
-        "version": "1.0.0",
+        "service": "Real AutoGen RAG Service",
+        "version": "2.0.0",
         "status": "running",
+        "autogen_status": "real_implementation",
         "endpoints": {
             "health": "/health",
             "chat": "/chat",
@@ -92,14 +105,15 @@ async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
-        "service": "autogen-rag",
+        "service": "real-autogen-rag",
         "agents_initialized": multi_agent_system is not None,
-        "pinecone_connected": pinecone_service is not None
+        "pinecone_connected": pinecone_service is not None,
+        "autogen_available": True
     }
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat_completion(request: ChatRequest):
-    """Single chat completion with multi-agent collaboration"""
+    """Single chat completion with real multi-agent collaboration"""
     try:
         if not multi_agent_system:
             raise HTTPException(status_code=503, detail="Multi-agent system not initialized")
@@ -120,7 +134,7 @@ async def chat_completion(request: ChatRequest):
 
 @app.post("/chat/stream")
 async def chat_stream(request: ChatRequest):
-    """Streaming chat completion with multi-agent collaboration"""
+    """Streaming chat completion with real multi-agent collaboration"""
     try:
         if not multi_agent_system:
             raise HTTPException(status_code=503, detail="Multi-agent system not initialized")
@@ -189,7 +203,7 @@ async def websocket_chat(websocket: WebSocket):
 
 @app.get("/agents/status")
 async def get_agents_status():
-    """Get status of all agents in the system"""
+    """Get status of all real AutoGen agents"""
     try:
         if not multi_agent_system:
             raise HTTPException(status_code=503, detail="Multi-agent system not initialized")
@@ -202,7 +216,7 @@ async def get_agents_status():
 
 @app.post("/agents/configure")
 async def configure_agents(config: Dict[str, Any]):
-    """Configure agent parameters and behaviors"""
+    """Configure real AutoGen agent parameters"""
     try:
         if not multi_agent_system:
             raise HTTPException(status_code=503, detail="Multi-agent system not initialized")
