@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     const filePath = path.join(uploadsDir, fileName);
     
     const buffer = Buffer.from(await file.arrayBuffer());
-    await fs.writeFile(filePath, buffer);
+    await fs.writeFile(filePath, new Uint8Array(buffer));
 
     // Validate and set PDF processing options
     const pdfOptions = {

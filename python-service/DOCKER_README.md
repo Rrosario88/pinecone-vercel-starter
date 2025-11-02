@@ -246,9 +246,37 @@ docker-compose up -d --build
 └─────────────────────────────────────────┘
 ```
 
+## Docker Hub Deployment
+
+### Push to Docker Hub
+To push the image to Docker Hub for distribution:
+
+```bash
+# Tag the image for Docker Hub
+docker tag real-autogen-rag-service:latest your-dockerhub-username/real-autogen-rag-service:latest
+
+# Push to Docker Hub
+docker push your-dockerhub-username/real-autogen-rag-service:latest
+
+# Pull from Docker Hub (for deployment)
+docker pull your-dockerhub-username/real-autogen-rag-service:latest
+```
+
+### Production Deployment
+```bash
+# Using Docker Hub image
+docker run -d \
+  --name real-autogen-rag-prod \
+  -p 8000:8000 \
+  --env-file .env \
+  --restart unless-stopped \
+  your-dockerhub-username/real-autogen-rag-service:latest
+```
+
 ## Version Information
 - **Service Version**: 2.0.0
 - **AutoGen Implementation**: Real multi-agent system
+- **Docker Image**: real-autogen-rag-service:latest
 - **Last Updated**: November 2024
 
 ## Support

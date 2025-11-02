@@ -49,6 +49,7 @@ export async function POST(req: Request) {
     // Prepare request for AutoGen service
     const autoGenRequest: AutoGenRequest = {
       messages: messages.map((msg: Message) => ({
+
         role: msg.role,
         content: msg.content
       })),
@@ -148,7 +149,7 @@ async function fallbackToOriginalChat(messages: Message[]) {
       )
     ])
 
-    const context = [pdfContext, webContext].filter(c => c && c.trim()).join('\n\n---\n\n')
+    const context = [pdfContext, webContext].filter(c => typeof c === "string" && c.trim()).join("\n\n---\n\n")
 
     const prompt = {
       role: 'system' as const,

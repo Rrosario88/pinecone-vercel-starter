@@ -138,13 +138,13 @@ export const PDFUpload: React.FC<PDFUploadProps> = ({
         clearTimeout(timeoutId);
         console.error('Fetch error for file:', file.name, fetchError);
         
-        if (fetchError.name === 'AbortError') {
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
           throw new Error('Upload timed out. The file may be too large or server is overloaded. Please try again.');
         }
-        if (fetchError.message.includes('Failed to fetch')) {
+        if (fetchError instanceof Error && fetchError.message.includes('Failed to fetch')) {
           throw new Error('Network error. Please check your connection and try again.');
         }
-        throw new Error(`Upload failed: ${fetchError.message}`);
+        throw new Error(`Upload failed: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`);
       }
 
       updateFileStatus('processing', 'Processing PDF...', 40);
