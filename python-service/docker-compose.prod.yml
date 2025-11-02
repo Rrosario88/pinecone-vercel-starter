@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # Frontend Service (Next.js)
+  frontend:
+    image: pinecone-vercel-starter-pdf-rag-app:latest
+    container_name: pdf-rag-app-prod
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.prod
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+      - AUTOGEN_SERVICE_URL=http://backend:8000
+    depends_on:
+      - backend
+    networks:
+      - pdf-rag-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Backend Service (AutoGen Python)
+  backend:
+    image: real-autogen-rag-service:latest
+    container_name: real-autogen-rag-prod
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env.prod
+    environment:
+      - PYTHONPATH=/app
+      - PORT=8000
+      - LOG_LEVEL=INFO
+    networks:
+      - pdf-rag-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+
+volumes:
+  uploads:
+    driver: local
+
+networks:
+  pdf-rag-network:
+    driver: bridge
+    name: pdf-rag-network-prod

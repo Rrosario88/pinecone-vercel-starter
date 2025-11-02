@@ -273,11 +273,42 @@ docker run -d \
   your-dockerhub-username/real-autogen-rag-service:latest
 ```
 
+## Production Deployment
+
+### Quick Production Setup
+```bash
+# Automated production deployment
+./deploy-production.sh
+
+# With Docker Hub push
+./deploy-production.sh --push
+```
+
+### Performance Optimization
+```bash
+# Optimize system for better performance
+./optimize-performance.sh
+
+# Deploy optimized version
+docker-compose -f docker-compose.optimized.yml up -d
+
+# Monitor performance
+./monitor-performance.sh
+```
+
+### Production Files Created
+- `docker-compose.prod.yml` - Production-ready compose file
+- `.env.prod.example` - Production environment template
+- `deploy-production.sh` - Automated deployment script
+- `optimize-performance.sh` - Performance optimization script
+- `PRODUCTION_DEPLOYMENT.md` - Detailed production guide
+
 ## Version Information
 - **Service Version**: 2.0.0
 - **AutoGen Implementation**: Real multi-agent system
 - **Docker Image**: real-autogen-rag-service:latest
 - **Last Updated**: November 2024
+- **Production Ready**: Yes
 
 ## Support
 
@@ -286,6 +317,7 @@ For issues and questions:
 2. Verify environment variables in `.env`
 3. Test API endpoints individually
 4. Check GitHub issues for known problems
+5. Review PRODUCTION_DEPLOYMENT.md for production issues
 
 ---
 
