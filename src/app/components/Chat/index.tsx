@@ -1,10 +1,10 @@
-// Chat.tsx
+// Chat.tsx - Multiline Chat Input Component
 
-import React, { FormEvent, ChangeEvent, useState, useRef, useEffect } from "react";
+import React, { FormEvent, ChangeEvent, useState, useRef, useEffect, useCallback } from "react";
 import Messages from "./Messages";
 import AgentStatusIndicator from "./AgentStatusIndicator";
-import { Message, useChat } from "ai/react";
-import { Paperclip, X, Globe, Plus, Trash2, Users, Bot } from "lucide-react";
+import { Message } from "ai/react";
+import { Paperclip, X, Globe, Plus, Trash2, Users, Bot, Send } from "lucide-react";
 import { PDFUpload } from "../Context/PDFUpload";
 import { ICard } from "../Context/Card";
 import { IUrlEntry } from "../Context/UrlButton";
@@ -28,6 +28,13 @@ interface ChatProps {
     use_summarizer: boolean;
     context_strategy: 'comprehensive' | 'focused' | 'quick';
   };
+  // Chat state props
+  messages: Message[];
+  input: string;
+  handleInputChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
+  handleSubmit: (e: FormEvent<HTMLFormElement>) => Promise<void>;
+  reload: () => void;
+  isLoading: boolean;
 }
 
 const Chat: React.FC<ChatProps> = ({ 
@@ -46,20 +53,29 @@ const Chat: React.FC<ChatProps> = ({
     use_critic: true,
     use_summarizer: false,
     context_strategy: 'comprehensive'
-  }
+  },
+  // Chat state props
+  messages,
+  input,
+  handleInputChange,
+  handleSubmit,
+  reload,
+  isLoading
 }) => {
-  const { messages, input, handleInputChange, handleSubmit, reload, isLoading } = useChat({
-    body: {
-      use_autogen: useAutoGen,
-      agent_config: autoGenConfig
-    }
-  });
+  // Chat state passed as props instead of using useChat hook
   const [showPDFUpload, setShowPDFUpload] = useState(false);
   const [showWebCrawl, setShowWebCrawl] = useState(false);
   const [clearTrigger, setClearTrigger] = useState(0);
   const [currentAgent, setCurrentAgent] = useState<'researcher' | 'analyst' | 'reviewer' | 'finalizing' | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const { showToast, ToastContainer } = useToast();
+  
+  // Multiline textarea specific state
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const shadowTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const [textareaHeight, setTextareaHeight] = useState('auto');
+  const [isComposing, setIsComposing] = useState(false);
+  const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Agent progression simulation when AutoGen is active
   useEffect(() => {
@@ -84,12 +100,105 @@ const Chat: React.FC<ChatProps> = ({
       } else {
         clearInterval(progressInterval);
       }
-    }, 2000); // Change agent every 2 seconds
+    }, 2000);
     
     return () => {
       clearInterval(progressInterval);
     };
   }, [isLoading, useAutoGen]);
+  
+  // Auto-resize textarea functionality
+  const adjustTextareaHeight = useCallback(() => {
+    if (!textareaRef.current || !shadowTextareaRef.current) return;
+    
+    const textarea = textareaRef.current;
+    const shadow = shadowTextareaRef.current;
+    
+    // Copy styles and content to shadow element
+    const computedStyle = window.getComputedStyle(textarea);
+    shadow.style.width = computedStyle.width;
+    shadow.style.padding = computedStyle.padding;
+    shadow.style.border = computedStyle.border;
+    shadow.style.fontSize = computedStyle.fontSize;
+    shadow.style.fontFamily = computedStyle.fontFamily;
+    shadow.style.lineHeight = computedStyle.lineHeight;
+    shadow.style.whiteSpace = 'pre-wrap';
+    shadow.style.wordWrap = 'break-word';
+    shadow.value = textarea.value;
+    
+    // Calculate new height
+    const scrollHeight = shadow.scrollHeight;
+    const minHeight = 24; // Minimum height for single line
+    const maxHeight = 200; // Maximum height before scrolling
+    
+    const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight);
+    
+    // Use requestAnimationFrame for smooth updates
+    requestAnimationFrame(() => {
+      if (textareaRef.current) {
+        textareaRef.current.style.height = `${newHeight}px`;
+        setTextareaHeight(`${newHeight}px`);
+      }
+    });
+  }, []);
+  
+  // Debounced resize function
+  const debouncedResize = useCallback(() => {
+    if (resizeTimeoutRef.current) {
+      clearTimeout(resizeTimeoutRef.current);
+    }
+    
+    resizeTimeoutRef.current = setTimeout(() => {
+      adjustTextareaHeight();
+    }, 16); // ~60fps
+  }, [adjustTextareaHeight]);
+  
+  // Handle input changes with auto-resize
+  const handleTextareaChange = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
+
+    handleInputChange(e);
+    debouncedResize();
+  }, [handleInputChange, debouncedResize]);
+  
+  // Handle keyboard events
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
+      e.preventDefault();
+      handleSubmit(e as any);
+    }
+  }, [handleSubmit, isComposing]);
+  
+  // Handle IME composition events
+  const handleCompositionStart = useCallback(() => {
+    setIsComposing(true);
+  }, []);
+  
+  const handleCompositionEnd = useCallback(() => {
+    setIsComposing(false);
+    // Trigger resize after composition ends
+    setTimeout(adjustTextareaHeight, 0);
+  }, [adjustTextareaHeight]);
+  
+  // Auto-focus textarea when component mounts or messages change
+  useEffect(() => {
+    if (textareaRef.current && !isLoading) {
+      textareaRef.current.focus();
+    }
+  }, [isLoading]);
+  
+  // Initial height adjustment
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [adjustTextareaHeight]);
+  
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+    };
+  }, []);
   
   // Persistent upload state
   interface UploadedFile {
@@ -116,15 +225,12 @@ const Chat: React.FC<ChatProps> = ({
 
   const handlePDFUploadSuccess = React.useCallback((documents: ICard[]) => {
     onPDFUpload?.(documents);
-    // Trigger a sync after successful upload (with delay for Pinecone indexing)
     setTimeout(() => {
-      // Trigger re-render that will cause Context to sync
       setDocumentCards(prev => [...prev]);
     }, 2000);
   }, [onPDFUpload, setDocumentCards]);
 
   const handleAllUploadsComplete = React.useCallback(() => {
-    // Don't automatically close the modal - let user close it manually
     console.log('All uploads completed - keeping modal open for user control');
   }, []);
 
@@ -149,7 +255,6 @@ const Chat: React.FC<ChatProps> = ({
         loading: false,
       };
       setUrlEntries(prev => [...prev, newEntry]);
-    } else if (urlEntries.some(entry => entry.url === url)) {
     }
   };
 
@@ -168,7 +273,6 @@ const Chat: React.FC<ChatProps> = ({
       showToast
     );
     
-    // Get updated documents after crawling
     const urlEntry = urlEntries.find(entry => entry.url === url);
     if (urlEntry?.seeded) {
       handleWebCrawlSuccess([]);
@@ -176,11 +280,8 @@ const Chat: React.FC<ChatProps> = ({
   };
 
   const handleRegenerate = (messageIndex: number) => {
-    // Find the last user message before the assistant message at messageIndex
-    // and regenerate the response from that point
     reload();
   };
-
 
   return (
     <div id="chat" className="flex flex-col h-full w-full max-h-full overflow-hidden">
@@ -244,7 +345,6 @@ const Chat: React.FC<ChatProps> = ({
             </div>
             
             <div className="p-4 space-y-4">
-              {/* Add URL Section */}
               <div>
                 <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
                   Add Website URL
@@ -287,7 +387,6 @@ const Chat: React.FC<ChatProps> = ({
                 </div>
               </div>
 
-              {/* Saved URLs List */}
               {urlEntries.length > 0 && (
                 <div>
                   <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
@@ -356,7 +455,7 @@ const Chat: React.FC<ChatProps> = ({
         </div>
       )}
 
-
+      {/* Multiline Chat Input Form */}
       <form
         onSubmit={handleSubmit}
         className={`flex-shrink-0 mt-4 relative bg-gray-50 dark:bg-gray-800 rounded-xl border shadow-sm transition-all duration-300 ${
@@ -373,77 +472,117 @@ const Chat: React.FC<ChatProps> = ({
           </>
         )}
         
-        <input
-          type="text"
-          placeholder={useAutoGen ? "Ask your AI agent team..." : "Ask about your uploaded PDFs..."}
-          className={`relative w-full py-4 pl-6 pr-24 text-gray-900 dark:text-gray-100 bg-transparent rounded-xl leading-tight focus:outline-none transition-all duration-300 ${
-            useAutoGen
-              ? 'focus:ring-2 focus:ring-orange-400 focus:shadow-orange-500/20 focus:shadow-lg'
-              : 'focus:ring-2 focus:ring-blue-500'
-          }`}
-          value={input}
-          onChange={handleInputChange}
-        />
-        
-        {/* Action Buttons */}
-        <div className="absolute right-12 top-1/2 -translate-y-1/2 flex gap-1">
-          {/* AutoGen Toggle Button */}
-          <button
-            type="button"
-            onClick={onToggleAutoGen}
-            className={`group relative p-2 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95 ${
-              useAutoGen ? 'bg-orange-500/10 rounded' : ''
-            }`}
-            title={useAutoGen ? "Multi-Agent Team: ON" : "Single Agent Mode: OFF"}
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md"></div>
-            <div className={`relative transition-colors ${
-              useAutoGen 
-                ? 'text-orange-500 dark:text-orange-400' 
-                : 'text-gray-500 group-hover:text-orange-500 dark:text-gray-400 dark:group-hover:text-orange-400'
-            }`}>
-              {useAutoGen ? (
-                <div className="relative">
-                  <Users size={18} className="relative" />
-                  <Bot size={10} className="absolute -top-1 -right-1 text-orange-600 dark:text-orange-300" />
-                </div>
-              ) : (
-                <Bot size={18} />
+        <div className="flex items-end">
+          {/* Main textarea container */}
+          <div className="flex-1 relative min-h-[44px]">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={handleTextareaChange}
+              onKeyDown={handleKeyDown}
+              onCompositionStart={handleCompositionStart}
+              onCompositionEnd={handleCompositionEnd}
+              placeholder={useAutoGen ? "Ask your AI agent team...\n(Shift+Enter for new line)" : "Ask about your uploaded PDFs...\n(Shift+Enter for new line)"}
+              rows={1}
+              className={`relative w-full py-3 pl-4 pr-4 text-gray-900 dark:text-gray-100 bg-transparent resize-none rounded-tl-xl rounded-bl-xl leading-tight focus:outline-none transition-all duration-300 overflow-y-auto ${
+                useAutoGen
+                  ? 'focus:ring-2 focus:ring-orange-400 focus:shadow-orange-500/20 focus:shadow-lg'
+                  : 'focus:ring-2 focus:ring-blue-500'
+              }`}
+              style={{ height: textareaHeight }}
+              aria-label="Chat message input"
+              aria-describedby="chat-input-help"
+              disabled={false}
+            />
+            
+            {/* Shadow textarea for height calculation */}
+            <textarea
+              ref={shadowTextareaRef}
+              className="absolute top-0 left-0 w-full h-auto opacity-0 pointer-events-none overflow-hidden"
+              aria-hidden="true"
+              tabIndex={-1}
+              readOnly
+            />
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex items-center px-2 pb-2 gap-1">
+            {/* AutoGen Toggle Button */}
+            <button
+              type="button"
+              onClick={onToggleAutoGen}
+              className={`group relative p-2 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95 rounded-lg ${
+                useAutoGen ? 'bg-orange-500/10' : ''
+              }`}
+              title={useAutoGen ? "Multi-Agent Team: ON" : "Single Agent Mode: OFF"}
+              aria-label={useAutoGen ? "Disable multi-agent mode" : "Enable multi-agent mode"}
+            >
+              <div className={`absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 transition-opacity duration-300 blur-md rounded-lg ${(!input || typeof input !== "string" || input.trim().length === 0) || isLoading ? "opacity-0" : "opacity-0 group-hover:opacity-70"}`}></div>
+              <div className={`relative transition-colors ${
+                useAutoGen 
+                  ? 'text-orange-500 dark:text-orange-400' 
+                  : 'text-gray-500 group-hover:text-orange-500 dark:text-gray-400 dark:group-hover:text-orange-400'
+              }`}>
+                {useAutoGen ? (
+                  <div className="relative">
+                    <Users size={18} className="relative" />
+                    <Bot size={10} className="absolute -top-1 -right-1 text-orange-600 dark:text-orange-300" />
+                  </div>
+                ) : (
+                  <Bot size={18} />
+                )}
+              </div>
+            </button>
+
+            {/* Web Crawl Button */}
+            <button
+              type="button"
+              onClick={() => setShowWebCrawl(true)}
+              className="group relative p-2 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95 rounded-lg"
+              title="Web Sources"
+              aria-label="Open web sources"
+            >
+              <div className={`absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 transition-opacity duration-300 blur-md rounded-lg ${(!input || typeof input !== "string" || input.trim().length === 0) || isLoading ? "opacity-0" : "opacity-0 group-hover:opacity-70"}`}></div>
+              <Globe size={18} className="relative text-gray-500 group-hover:text-orange-500 dark:text-gray-400 dark:group-hover:text-orange-400 transition-colors" />
+            </button>
+            
+            {/* PDF Upload Button */}
+            <button
+              type="button"
+              onClick={() => setShowPDFUpload(true)}
+              className="group relative p-2 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95 rounded-lg"
+              title="Upload PDF"
+              aria-label="Upload PDF documents"
+            >
+              <div className={`absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 transition-opacity duration-300 blur-md rounded-lg ${(!input || typeof input !== "string" || input.trim().length === 0) || isLoading ? "opacity-0" : "opacity-0 group-hover:opacity-70"}`}></div>
+              <Paperclip size={18} className="relative text-gray-500 group-hover:text-orange-500 dark:text-gray-400 dark:group-hover:text-orange-400 transition-colors" />
+            </button>
+            
+            {/* Send Button */}
+            <button
+              type="submit"
+              className={`group relative p-2 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95 rounded-lg ${
+                useAutoGen ? "bg-orange-500 text-white hover:bg-orange-600" : "bg-blue-500 text-white hover:bg-blue-600"
+              } ${(!input || typeof input !== "string" || input.trim().length === 0) || isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+              title="Send message"
+              aria-label="Send message"
+              disabled={(!input || typeof input !== "string" || input.trim().length === 0) || isLoading}
+            >
+              <div className={`absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 transition-opacity duration-300 blur-md rounded-lg ${(!input || typeof input !== "string" || input.trim().length === 0) || isLoading ? "opacity-0" : "opacity-0 group-hover:opacity-70"}`}></div>
+              <Send size={18} className={`relative transition-colors ${(!input || typeof input !== "string" || input.trim().length === 0) || isLoading ? "opacity-70" : ""}`} />
+            </button>
+            {/* Submit indicator */}
+            <div className="flex items-center gap-2 pl-2 pr-2 pointer-events-none">
+              {useAutoGen && (
+                <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" title="Multi-Agent Analysis Enabled"></div>
               )}
             </div>
-          </button>
-
-          {/* Web Crawl Button */}
-          <button
-            type="button"
-            onClick={() => setShowWebCrawl(true)}
-            className="group relative p-2 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
-            title="Web Sources"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md"></div>
-            <Globe size={18} className="relative text-gray-500 group-hover:text-orange-500 dark:text-gray-400 dark:group-hover:text-orange-400 transition-colors" />
-          </button>
-          
-          {/* PDF Upload Button */}
-          <button
-            type="button"
-            onClick={() => setShowPDFUpload(true)}
-            className="group relative p-2 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
-            title="Upload PDF"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md"></div>
-            <Paperclip size={18} className="relative text-gray-500 group-hover:text-orange-500 dark:text-gray-400 dark:group-hover:text-orange-400 transition-colors" />
-          </button>
+          </div>
         </div>
         
-        {/* Submit indicator - changes based on AutoGen status */}
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
-          {useAutoGen && (
-            <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" title="Multi-Agent Analysis Enabled"></div>
-          )}
-          <span className={`text-xs ${useAutoGen ? 'text-orange-400' : 'text-gray-400 dark:text-gray-500'}`}>
-            ⮐
-          </span>
+        {/* Screen reader announcements */}
+        <div id="chat-input-help" className="sr-only">
+          Press Enter to send, Shift+Enter for new line. Use Tab to navigate to action buttons.
         </div>
       </form>
     </div>

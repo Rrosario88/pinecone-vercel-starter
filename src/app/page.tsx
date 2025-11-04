@@ -39,7 +39,13 @@ const Page: React.FC = () => {
     context_strategy: 'comprehensive' as 'comprehensive' | 'focused' | 'quick'
   });
 
-  const { messages, input, handleInputChange, handleSubmit } = useChat({
+  // Use the fixed chat endpoint that handles AutoGen properly
+  const { messages, input, handleInputChange, handleSubmit, reload, isLoading } = useChat({
+    api: "/api/chat-fixed",
+    body: {
+      use_autogen: useAutoGen,
+      agent_config: autoGenConfig
+    },
     onFinish: async () => {
       setGotMessages(true);
     },
@@ -137,6 +143,13 @@ const Page: React.FC = () => {
             useAutoGen={useAutoGen}
             onToggleAutoGen={() => setUseAutoGen(!useAutoGen)}
             autoGenConfig={autoGenConfig}
+            // Pass chat state as props
+            messages={messages}
+            input={input}
+            handleInputChange={handleInputChange}
+            handleSubmit={handleMessageSubmit}
+            reload={reload}
+            isLoading={isLoading}
           />
         </div>
         

@@ -1,81 +1,118 @@
 import { NextResponse } from 'next/server';
-import { Pinecone } from '@pinecone-database/pinecone';
 
 export async function GET() {
   try {
-    const pinecone = new Pinecone();
-    const index = pinecone.Index(process.env.PINECONE_INDEX!);
+    // Use the existing test-query API to get document information
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
     
-    // Query for all PDF documents
-    const pdfNamespace = index.namespace('pdf-documents');
-    const pdfQuery = await pdfNamespace.query({
-      vector: new Array(1536).fill(0), // Dummy vector
-      topK: 10000, // Get all documents
-      includeMetadata: true,
-      filter: {} // No filter to get everything
+    // Get PDF documents by querying the pdf namespace
+    const pdfResponse = await fetch(`${baseUrl}/api/test-query`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: 'document', // Generic query to get results
+        topK: 1000, // Get many results
+        namespace: 'pdf-documents'
+      })
     });
 
-    // Query for all web documents
-    const webNamespace = index.namespace('');
-    const webQuery = await webNamespace.query({
-      vector: new Array(1536).fill(0), // Dummy vector
-      topK: 10000, // Get all documents
-      includeMetadata: true,
-      filter: {} // No filter to get everything
+    // Get web documents from default namespace
+    const webResponse = await fetch(`${baseUrl}/api/test-query`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: 'document', // Generic query to get results
+        topK: 1000, // Get many results
+        namespace: ''
+      })
     });
 
-    // Count unique PDF documents by filename
-    const pdfDocuments = new Set();
-    pdfQuery.matches?.forEach(match => {
-      if (match.metadata?.filename) {
-        pdfDocuments.add(match.metadata.filename);
+    let pdfData = { pdfNamespace: { data: [] } };
+    let webData = { defaultNamespace: { data: [] } };
+
+    if (pdfResponse.ok) {
+      pdfData = await pdfResponse.json();
+    }
+
+    if (webResponse.ok) {
+      webData = await webResponse.json();
+    }
+
+    // Process PDF documents
+    const pdfDocuments = new Set<string>();
+    const pdfDetails: Array<{
+      name: string;
+      type: 'pdf';
+      chunks: number;
+      uploadId: string;
+    }> = [];
+    
+    pdfData.pdfNamespace?.data?.forEach((item: any) => {
+      if (item.metadata?.filename) {
+        if (!pdfDocuments.has(item.metadata.filename)) {
+          pdfDocuments.add(item.metadata.filename);
+          pdfDetails.push({
+            name: item.metadata.filename,
+            type: 'pdf',
+            chunks: 1, // Will count up
+            uploadId: item.metadata.uploadId || 'unknown'
+          });
+        } else {
+          // Increment chunk count
+          const doc = pdfDetails.find(d => d.name === item.metadata.filename);
+          if (doc) doc.chunks++;
+        }
       }
     });
 
-    // Count unique web documents by URL
-    const webDocuments = new Set();
-    webQuery.matches?.forEach(match => {
-      if (match.metadata?.url) {
-        webDocuments.add(match.metadata.url);
+    // Process web documents
+    const webDocuments = new Set<string>();
+    const webDetails: Array<{
+      name: string;
+      type: 'web';
+      chunks: number;
+    }> = [];
+    
+    webData.defaultNamespace?.data?.forEach((item: any) => {
+      if (item.metadata?.url) {
+        if (!webDocuments.has(item.metadata.url)) {
+          webDocuments.add(item.metadata.url);
+          webDetails.push({
+            name: item.metadata.url,
+            type: 'web',
+            chunks: 1 // Will count up
+          });
+        } else {
+          // Increment chunk count
+          const doc = webDetails.find(d => d.name === item.metadata.url);
+          if (doc) doc.chunks++;
+        }
       }
     });
 
-    // Get document details
-    const pdfDetails = Array.from(pdfDocuments).map(filename => {
-      const chunks = pdfQuery.matches?.filter(m => m.metadata?.filename === filename) || [];
-      return {
-        name: filename,
-        type: 'pdf',
-        chunks: chunks.length,
-        uploadId: chunks[0]?.metadata?.uploadId || 'unknown'
-      };
-    });
-
-    const webDetails = Array.from(webDocuments).map(url => {
-      const chunks = webQuery.matches?.filter(m => m.metadata?.url === url) || [];
-      return {
-        name: url,
-        type: 'web',
-        chunks: chunks.length
-      };
-    });
+    const totalPdfChunks = pdfDetails.reduce((sum, doc) => sum + doc.chunks, 0);
+    const totalWebChunks = webDetails.reduce((sum, doc) => sum + doc.chunks, 0);
 
     return NextResponse.json({
       success: true,
       inventory: {
         pdf: {
           count: pdfDocuments.size,
-          totalChunks: pdfQuery.matches?.length || 0,
+          totalChunks: totalPdfChunks,
           documents: pdfDetails
         },
         web: {
           count: webDocuments.size,
-          totalChunks: webQuery.matches?.length || 0,
+          totalChunks: totalWebChunks,
           documents: webDetails
         },
         total: {
           documents: pdfDocuments.size + webDocuments.size,
-          chunks: (pdfQuery.matches?.length || 0) + (webQuery.matches?.length || 0)
+          chunks: totalPdfChunks + totalWebChunks
         }
       }
     });

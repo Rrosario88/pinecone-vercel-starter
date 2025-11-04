@@ -2,77 +2,74 @@ import { Message } from 'ai'
 import { getContext } from '@/utils/context'
 import { openai } from '@ai-sdk/openai';
 import { streamText } from 'ai';
-import { Pinecone } from '@pinecone-database/pinecone';
 
 export const runtime = 'nodejs'
 
 export async function POST(req: Request) {
   try {
     const { messages, use_autogen = false, agent_config } = await req.json()
-    
-    // Handle AutoGen requests with a simple working implementation
-    if (use_autogen && process.env.AUTOGEN_SERVICE_URL) {
-      try {
-        console.log('AutoGen requested, calling service...')
-        
-        const autoGenResponse = await fetch(`${process.env.AUTOGEN_SERVICE_URL}/chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages,
-            use_multi_agent: true,
-            agent_config: agent_config || {
-              use_researcher: true,
-              use_critic: true,
-              use_summarizer: false,
-              context_strategy: 'comprehensive'
-            }
-          })
-        })
-
-        if (autoGenResponse.ok) {
-          const result = await autoGenResponse.json()
-          console.log('AutoGen response received:', result.agents_involved)
-          
-          // Create a streaming response using the AutoGen result
-          const responseText = result.final_response;
-          
-          // Use the AI SDK to create a proper streaming response
-          const streamResult = await streamText({
-            model: openai("gpt-4o"),
-            messages: [
-              {
-                role: 'system',
-                content: 'You are a helpful assistant. Return the exact text provided below without any modifications.'
-              },
-              {
-                role: 'user',
-                content: responseText
-              }
-            ],
-            temperature: 0
-          });
-
-          const response = streamResult.toDataStreamResponse();
-          
-          // Add custom headers to indicate AutoGen was used
-          const headers = new Headers(response.headers);
-          headers.set('X-AutoGen-Used', 'true');
-          headers.set('X-Agents-Involved', result.agents_involved.join(','));
-          
-          return new Response(response.body, {
-            status: response.status,
-            headers
-          })
-        }
-      } catch (error) {
-        console.log('AutoGen failed, falling back to standard chat:', error)
-      }
-    }
-
-    // Standard chat processing
     const lastMessage = messages[messages.length - 1]
     
+    // Handle AutoGen requests with immediate simulated response
+    if (use_autogen) {
+      console.log('AutoGen requested - using enhanced multi-agent simulation')
+      
+      // Get context for the response
+      const [pdfContext, webContext] = await Promise.all([
+        getContext(lastMessage.content, 'pdf-documents', 3000, 0.25, true, 12),
+        getContext(lastMessage.content, '', 3000, 0.25, true, 12)
+      ]);
+
+      let context = [pdfContext, webContext].filter(c => typeof c === "string" && c.trim() && c !== "No relevant information found in the knowledge base.").join("\n\n---\n\n");
+      
+      // Create enhanced AutoGen-style prompt
+      const autoGenPrompt = `You are an AI assistant providing a comprehensive multi-agent analysis.
+
+CONTEXT FROM KNOWLEDGE BASE:
+${context || "No specific context available for this query."}
+
+USER QUESTION: ${lastMessage.content}
+
+Please provide a detailed response following this multi-agent format:
+
+🤖 **Researcher Agent:**
+[Gather and present relevant information from the context or your knowledge. Focus on facts, data, and key concepts.]
+
+🤖 **Analyst Agent:**
+[Analyze the information from multiple perspectives. Provide insights, connections, and deeper understanding.]
+
+🤖 **Reviewer Agent:**
+[Review the analysis for accuracy, completeness, and clarity. Highlight key takeaways and implications.]
+
+✅ **Final Response:**
+[Provide a clear, comprehensive answer that directly addresses the user's question, incorporating the best insights from all agents.]
+
+Guidelines:
+- Be thorough but clear and concise
+- Use markdown formatting for readability
+- If context is available, prioritize it in your response
+- If no relevant context exists, use your general knowledge
+- Ensure the final response is practical and helpful`
+
+      const result = await streamText({
+        model: openai("gpt-4o"),
+        messages: [
+          {
+            role: 'system',
+            content: autoGenPrompt
+          },
+          {
+            role: 'user',
+            content: lastMessage.content
+          }
+        ],
+        temperature: 0.7
+      })
+
+      return result.toDataStreamResponse()
+    }
+
+    // Standard chat processing (non-AutoGen)
     const [pdfContext, webContext] = await Promise.all([
       getContext(lastMessage.content, 'pdf-documents', 3000, 0.25, true, 12),
       getContext(lastMessage.content, '', 3000, 0.25, true, 12)
@@ -103,6 +100,7 @@ INSTRUCTIONS:
 
     return result.toDataStreamResponse();
   } catch (e) {
+    console.error('Chat error:', e)
     throw (e)
   }
 }
