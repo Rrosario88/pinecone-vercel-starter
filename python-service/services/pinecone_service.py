@@ -65,7 +65,7 @@ class PineconeService:
         query: str, 
         namespace: str = "", 
         top_k: int = 5,
-        min_score: float = 0.3
+        min_score: float = -1.0
     ) -> List[Dict[str, Any]]:
         """Search for relevant context in Pinecone"""
         try:
@@ -142,53 +142,96 @@ class PineconeService:
         return results
     
     async def get_document_inventory(self, namespace: str = "") -> Dict[str, Any]:
-        """Get inventory of documents in the knowledge base"""
+        """Get inventory of documents in knowledge base using test-query approach"""
         try:
             if not self.index:
                 raise ValueError("Pinecone index not initialized")
             
-            # Use dummy vector to get all documents
-            dummy_vector = [0.0] * 1536  # Assuming 1536-dimensional embeddings
+            # Use test-query API approach - create a generic query vector
+            # This bypasses filter requirements by using a real embedding
+            test_query = "document content information text data"
+            query_embedding = await self.get_embeddings(test_query)
             
-            def query_inventory():
+            # Query both namespaces to get all documents
+            def query_pdf_inventory():
                 return self.index.query(
-                    vector=dummy_vector,
+                    vector=query_embedding,
                     top_k=10000,  # Get as many as possible
                     include_metadata=True,
-                    namespace=namespace
+                    namespace="pdf-documents"  # Always query PDF namespace
                 )
             
-            query_result = await asyncio.get_event_loop().run_in_executor(None, query_inventory)
+            def query_web_inventory():
+                return self.index.query(
+                    vector=query_embedding,
+                    top_k=10000,  # Get as many as possible
+                    include_metadata=True,
+                    namespace=""  # Default namespace for web docs
+                )
+            
+            # Execute both queries
+            pdf_query_result = await asyncio.get_event_loop().run_in_executor(None, query_pdf_inventory)
+            web_query_result = await asyncio.get_event_loop().run_in_executor(None, query_web_inventory)
+            
+            # Combine results from both namespaces
+            all_matches = []
+            if pdf_query_result.get('matches'):
+                all_matches.extend(pdf_query_result['matches'])
+            if web_query_result.get('matches'):
+                all_matches.extend(web_query_result['matches'])
             
             # Process results to get document inventory
-            documents = {}
+            pdf_documents = []
+            web_documents = {}
             total_chunks = 0
             
-            for match in query_result.get('matches', []):
+            for match in all_matches:
                 metadata = match.get('metadata', {})
                 if metadata:
-                    source = self._get_source_info(metadata)
-                    if source not in documents:
-                        documents[source] = {
-                            "chunks": 0,
-                            "metadata": metadata
-                        }
-                    documents[source]["chunks"] += 1
                     total_chunks += 1
+                    
+                    # Extract document information
+                    filename = metadata.get("filename")
+                    url = metadata.get("url")
+                    
+                    if filename:
+                        # Find existing PDF document entry
+                        pdf_doc = next((doc for doc in pdf_documents if doc.get("filename") == filename), None)
+                        if not pdf_doc:
+                            pdf_doc = {
+                                "filename": filename,
+                                "chunks": 0,
+                                "type": "pdf",
+                                "uploadId": metadata.get("uploadId")
+                            }
+                            pdf_documents.append(pdf_doc)
+                        pdf_doc["chunks"] += 1
+                    
+                    elif url:
+                        # Find existing web document entry
+                        if url not in web_documents:
+                            web_documents[url] = {
+                                "url": url,
+                                "chunks": 0,
+                                "type": "web"
+                            }
+                        web_documents[url]["chunks"] += 1
             
             return {
-                "total_documents": len(documents),
-                "total_chunks": total_chunks,
-                "documents": documents,
+                "totalDocuments": len(pdf_documents) + len(web_documents),
+                "totalChunks": total_chunks,
+                "pdfDocuments": pdf_documents,
+                "webDocuments": list(web_documents.values()),
                 "namespace": namespace
             }
             
         except Exception as e:
             logger.error(f"Failed to get document inventory: {e}")
             return {
-                "total_documents": 0,
-                "total_chunks": 0,
-                "documents": {},
+                "totalDocuments": 0,
+                "totalChunks": 0,
+                "pdfDocuments": [],
+                "webDocuments": [],
                 "namespace": namespace,
                 "error": str(e)
             }

@@ -2,6 +2,7 @@ import os
 import asyncio
 import json
 import logging
+import os
 from datetime import datetime
 from typing import List, Dict, Any, Optional, AsyncGenerator
 
@@ -25,6 +26,12 @@ class RealMultiAgentRAGSystem:
             "summarizer": {"message_count": 0, "last_used": None, "active": True},
         }
         
+    def _ensure_client_initialized(self):
+        """Ensure OpenAI client is initialized"""
+        if not self.openai_client:
+            raise ValueError("OpenAI client not initialized. Call initialize() first.")
+        return self.openai_client
+
     async def initialize(self):
         """Initialize enhanced multi-agent system"""
         try:
@@ -33,7 +40,7 @@ class RealMultiAgentRAGSystem:
             if not api_key:
                 raise ValueError("OPENAI_API_KEY environment variable is required")
             
-            self.openai_client = openai.AsyncOpenAI(api_key=api_key)
+            self.openai_client = AsyncOpenAI(api_key=api_key)
             
             logger.info("Enhanced multi-agent system initialized successfully")
             
@@ -165,34 +172,24 @@ class RealMultiAgentRAGSystem:
     ) -> str:
         """Enhance user message with document context"""
         try:
-            context_info = ""
-            
-            if document_inventory and document_inventory.totalDocuments > 0:
-                pdf_names = [doc.filename for doc in document_inventory.pdfDocuments if doc.filename]
-                web_names = [doc.url for doc in document_inventory.webDocuments if doc.url]
-                
-                context_info = f"\n\nAvailable Documents: {len(pdf_names + web_names)} total"
-                if pdf_names:
-                    context_info += f"\nPDFs: {', '.join(pdf_names[:5])}"
-                if web_names:
-                    context_info += f"\nWeb Sources: {', '.join(web_names[:5])}"
-            
-            # Get relevant context from Pinecone
+            # Get relevant context from Pinecone first
             context_results = await self.pinecone_service.search_context(
                 query=message,
-                namespace="",
+                namespace="pdf-documents",
                 top_k=5,
-                min_score=0.3
+                min_score=-1.0
             )
             
-            if context_results:
-                context_info += f"\n\nRelevant Context Found: {len(context_results)} sources"
-                for i, result in enumerate(context_results[:3], 1):
-                    source = result.get("source", "Unknown")
-                    content = result.get("content", "")[:200]
-                    context_info += f"\n{i}. {source}: {content}..."
+            # Format context similar to regular RAG system
+            context_text = self._format_context(context_results)
             
-            enhanced_message = f"User Query: {message}{context_info}"
+            # Create enhanced message with proper CONTEXT section
+            enhanced_message = f"""User Query: {message}
+
+CONTEXT:
+{context_text}
+
+Please answer the user's query using the provided context above. The context contains relevant document information that should be used to formulate your response."""
             
             # Update researcher stats
             self.agent_stats["researcher"]["message_count"] += 1
@@ -204,6 +201,25 @@ class RealMultiAgentRAGSystem:
             logger.error(f"Failed to enhance message with context: {e}")
             return message
     
+    def _format_context(self, context_results: List[Dict[str, Any]]) -> str:
+        """Format context results for agent consumption"""
+        if not context_results:
+            return "No relevant context found in the knowledge base."
+        
+        formatted_context = []
+        for i, result in enumerate(context_results, 1):
+            source = result.get("source", "Unknown source")
+            content = result.get("content", "")
+            score = result.get("score", 0.0)
+            
+            formatted_context.append(f"""
+[Context {i}] (Relevance: {score:.3f})
+Source: {source}
+Content: {content}
+---""")
+        
+        return "\n".join(formatted_context)
+    
     async def _agent_research_phase(self, enhanced_message: str) -> AgentMessage:
         """Research agent phase - gather and present context"""
         try:
@@ -214,16 +230,22 @@ class RealMultiAgentRAGSystem:
 
 {enhanced_message}
 
-Your task:
-1. Analyze the available documents and context
-2. Identify the most relevant information sources
-3. Provide a comprehensive research summary
-4. Cite sources using [Source: filename] format
-5. Focus on accuracy and completeness
+IMPORTANT: Use the CONTEXT provided above to answer the user's query. The context contains the actual document content you need.
 
-Provide a thorough research summary that will help the Analyst agent provide a complete response."""
+Your task:
+1. Carefully read and analyze the CONTEXT section - it contains real document content
+2. Extract relevant information from the provided context to answer the user's query
+3. Provide a comprehensive research summary based PRIMARILY on the context content
+4. Cite sources using [Source: filename] format based on the context sources
+5. Focus on accuracy and completeness using the provided document text
+
+Provide a thorough research summary that directly addresses the user's query using the document content in the CONTEXT section."""
             
-            response = await self.openai_client.chat.completions.create(
+            if not self.openai_client:
+                raise ValueError("OpenAI client not initialized")
+            
+            client = self._ensure_client_initialized()
+            response = await client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
                     {"role": "system", "content": "You are a meticulous researcher specializing in document analysis."},
@@ -232,7 +254,7 @@ Provide a thorough research summary that will help the Analyst agent provide a c
                 temperature=0.3
             )
             
-            research_content = response.choices[0].message.content
+            research_content = response.choices[0].message.content or ""
             
             self.agent_stats["researcher"]["message_count"] += 1
             self.agent_stats["researcher"]["last_used"] = datetime.now().isoformat()
@@ -263,15 +285,18 @@ ORIGINAL QUERY: {original_query}
 RESEARCH FINDINGS:
 {research_findings}
 
-Your task:
-1. Acknowledge the research findings
-2. Identify key insights from the research
-3. Prepare for generating a comprehensive response
-4. Note any gaps or areas needing clarification
+IMPORTANT: The research findings should be based on the actual document content provided in the CONTEXT section. Verify that the researcher has used the real document content.
 
-Provide a brief analysis of the research and your approach for the comprehensive response."""
+Your task:
+1. Evaluate if the research findings properly utilized the document content from the CONTEXT
+2. Identify key insights from the research that directly address the user's query
+3. Prepare for generating a comprehensive response based on the document content
+4. Note any gaps or areas needing clarification in the research
+
+Provide a brief analysis of the research quality and your approach for the comprehensive response."""
             
-            response = await self.openai_client.chat.completions.create(
+            client = self._ensure_client_initialized()
+            response = await client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
                     {"role": "system", "content": "You are an analytical agent preparing to synthesize information."},
@@ -280,7 +305,7 @@ Provide a brief analysis of the research and your approach for the comprehensive
                 temperature=0.5
             )
             
-            analysis_content = response.choices[0].message.content
+            analysis_content = response.choices[0].message.content or ""
             
             self.agent_stats["analyst"]["message_count"] += 1
             self.agent_stats["analyst"]["last_used"] = datetime.now().isoformat()
@@ -330,7 +355,8 @@ Your task:
 
 Provide a complete, well-formatted response based on all available information."""
             
-            response = await self.openai_client.chat.completions.create(
+            client = self._ensure_client_initialized()
+            response = await client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
                     {"role": "system", "content": "You are an expert analyst specializing in comprehensive response generation."},
@@ -339,7 +365,7 @@ Provide a complete, well-formatted response based on all available information."
                 temperature=0.7
             )
             
-            response_content = response.choices[0].message.content
+            response_content = response.choices[0].message.content or ""
             
             self.agent_stats["analyst"]["message_count"] += 1
             self.agent_stats["analyst"]["last_used"] = datetime.now().isoformat()
@@ -381,7 +407,8 @@ Evaluation Criteria:
 If the response is excellent and meets all criteria, return "APPROVED:" followed by the original response.
 If improvements are needed, provide constructive feedback and specific suggestions for enhancement."""
             
-            response = await self.openai_client.chat.completions.create(
+            client = self._ensure_client_initialized()
+            response = await client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
                     {"role": "system", "content": "You are a quality assurance reviewer with high standards."},
@@ -390,7 +417,7 @@ If improvements are needed, provide constructive feedback and specific suggestio
                 temperature=0.5
             )
             
-            review_content = response.choices[0].message.content
+            review_content = response.choices[0].message.content or ""
             
             self.agent_stats["reviewer"]["message_count"] += 1
             self.agent_stats["reviewer"]["last_used"] = datetime.now().isoformat()
@@ -438,7 +465,8 @@ Your task:
 
 Provide an enhanced response that addresses the reviewer's feedback while maintaining quality."""
             
-            response = await self.openai_client.chat.completions.create(
+            client = self._ensure_client_initialized()
+            response = await client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
                     {"role": "system", "content": "You are an analyst skilled at incorporating feedback to improve responses."},
@@ -447,7 +475,7 @@ Provide an enhanced response that addresses the reviewer's feedback while mainta
                 temperature=0.6
             )
             
-            refined_content = response.choices[0].message.content
+            refined_content = response.choices[0].message.content or ""
             
             self.agent_stats["analyst"]["message_count"] += 1
             self.agent_stats["analyst"]["last_used"] = datetime.now().isoformat()
@@ -486,7 +514,8 @@ Requirements:
 
 Provide an improved summary that enhances clarity and readability."""
             
-            response = await self.openai_client.chat.completions.create(
+            client = self._ensure_client_initialized()
+            response = await client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
                     {"role": "system", "content": "You are a summarizer expert at improving clarity and structure."},
@@ -495,7 +524,7 @@ Provide an improved summary that enhances clarity and readability."""
                 temperature=0.5
             )
             
-            summary_content = response.choices[0].message.content
+            summary_content = response.choices[0].message.content or ""
             
             self.agent_stats["summarizer"]["message_count"] += 1
             self.agent_stats["summarizer"]["last_used"] = datetime.now().isoformat()
@@ -540,9 +569,19 @@ Provide an improved summary that enhances clarity and readability."""
 
 {context_part}
 
-Provide a well-structured, accurate response based on this context. If context doesn't contain relevant information, state that clearly."""
+IMPORTANT: The CONTEXT section above contains the actual document content. Use this content to provide a comprehensive and accurate answer to the user's question.
+
+Your task:
+1. Carefully read the CONTEXT section which contains real document text
+2. Extract relevant information from the document content to answer the user's query
+3. Provide a well-structured, accurate response based PRIMARILY on the context content
+4. Cite sources when appropriate using the information provided in the context
+5. If the context doesn't contain relevant information, state that clearly
+
+Focus on using the actual document content provided in the CONTEXT section."""
             
-            response = await self.openai_client.chat.completions.create(
+            client = self._ensure_client_initialized()
+            response = await client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
                     {"role": "system", "content": system_message},
@@ -551,7 +590,7 @@ Provide a well-structured, accurate response based on this context. If context d
                 temperature=0.7
             )
             
-            response_content = response.choices[0].message.content
+            response_content = response.choices[0].message.content or ""
             
             # Update stats
             self.agent_stats["analyst"]["message_count"] += 1

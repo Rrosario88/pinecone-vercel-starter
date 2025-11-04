@@ -1,0 +1,3 @@
+INFO:__main__:Successfully imported real AutoGen multi-agent system
+INFO:     Will watch for changes in these directories: ['/Users/onyx/Repos/pinecone-vercel-starter/python-service']
+ERROR:    [Errno 48] Address already in use
