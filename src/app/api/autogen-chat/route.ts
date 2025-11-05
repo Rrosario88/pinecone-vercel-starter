@@ -98,7 +98,7 @@ export async function POST(req: Request) {
 
                 for (const line of lines) {
                   if (line.startsWith('data: ')) {
-                    const data = line[6:] // Remove 'data: ' prefix
+                    const data = line.slice(6) // Remove 'data: ' prefix
                     
                     if (data === '[DONE]') {
                       // Send the complete response as a single stream chunk

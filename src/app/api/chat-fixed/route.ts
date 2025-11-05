@@ -69,7 +69,7 @@ export async function POST(req: Request) {
           return streamResult.toDataStreamResponse()
         }
       } catch (error) {
-        console.log('AutoGen service failed, using simulated multi-agent response:', error.message)
+        console.log('AutoGen service failed, using simulated multi-agent response:', (error as Error).message)
       }
     }
 
