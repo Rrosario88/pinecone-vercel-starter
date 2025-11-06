@@ -104,7 +104,7 @@ const Page: React.FC = () => {
         onAutoGenConfigChange={setAutoGenConfig}
       />
       
-      <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+      <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-slate-900 transition-colors duration-200">
         
         <Header className="flex-shrink-0 py-4 px-6" />
 

@@ -301,7 +301,7 @@ const Chat: React.FC<ChatProps> = ({
       {/* PDF Upload Modal */}
       {showPDFUpload && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full border border-gray-300 dark:border-gray-700 relative">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full border border-gray-300 dark:border-gray-700 relative">
             <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Upload PDF Documents</h3>
               <button
@@ -332,7 +332,7 @@ const Chat: React.FC<ChatProps> = ({
       {/* Web Crawl Modal */}
       {showWebCrawl && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full border border-gray-300 dark:border-gray-700 relative">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full border border-gray-300 dark:border-gray-700 relative">
             <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Web Sources</h3>
               <button
@@ -354,7 +354,7 @@ const Chat: React.FC<ChatProps> = ({
                     type="url"
                     defaultValue="https://"
                     placeholder="https://example.com"
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         const input = e.target as HTMLInputElement;
@@ -396,7 +396,7 @@ const Chat: React.FC<ChatProps> = ({
                     {urlEntries.map((entry, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-2 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
+                        className="flex items-center justify-between p-2 bg-gray-100 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-600"
                       >
                         <div className="flex-1 min-w-0 mr-2">
                           <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
@@ -458,9 +458,9 @@ const Chat: React.FC<ChatProps> = ({
       {/* Multiline Chat Input Form */}
       <form
         onSubmit={handleSubmit}
-        className={`flex-shrink-0 mt-4 relative bg-gray-50 dark:bg-gray-800 rounded-xl border shadow-sm transition-all duration-300 ${
-          useAutoGen 
-            ? 'border-orange-400 dark:border-orange-500 shadow-orange-500/20 shadow-lg hover:shadow-orange-500/30 hover:shadow-xl' 
+        className={`flex-shrink-0 mt-4 relative bg-gray-50 dark:bg-gray-900 rounded-xl border shadow-sm transition-all duration-300 ${
+          useAutoGen
+            ? 'border-orange-400 dark:border-orange-500 shadow-orange-500/20 shadow-lg hover:shadow-orange-500/30 hover:shadow-xl'
             : 'border-gray-300 dark:border-gray-700'
         }`}
       >
@@ -468,7 +468,6 @@ const Chat: React.FC<ChatProps> = ({
         {useAutoGen && (
           <>
             <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-400 via-red-500 to-yellow-400 rounded-xl opacity-30 blur-sm animate-pulse"></div>
-            <div className="absolute -inset-1 bg-gradient-to-r from-orange-300 via-red-400 to-yellow-300 rounded-xl opacity-0 hover:opacity-20 blur-md transition-opacity duration-300"></div>
           </>
         )}
         
@@ -484,12 +483,8 @@ const Chat: React.FC<ChatProps> = ({
               onCompositionEnd={handleCompositionEnd}
               placeholder={useAutoGen ? "Ask your AI agent team...\n(Shift+Enter for new line)" : "Ask about your uploaded PDFs...\n(Shift+Enter for new line)"}
               rows={1}
-              className={`relative w-full py-3 pl-4 pr-4 text-gray-900 dark:text-gray-100 bg-transparent resize-none rounded-tl-xl rounded-bl-xl leading-tight focus:outline-none transition-all duration-300 overflow-y-auto ${
-                useAutoGen
-                  ? 'focus:ring-2 focus:ring-orange-400 focus:shadow-orange-500/20 focus:shadow-lg'
-                  : 'focus:ring-2 focus:ring-blue-500'
-              }`}
-              style={{ height: textareaHeight }}
+              className="relative w-full py-3 pl-4 pr-4 text-gray-900 dark:text-gray-100 bg-transparent resize-none rounded-tl-xl rounded-bl-xl leading-tight focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 transition-all duration-300 overflow-y-auto"
+              style={{ height: textareaHeight, outline: 'none', boxShadow: 'none' }}
               aria-label="Chat message input"
               aria-describedby="chat-input-help"
               disabled={false}
