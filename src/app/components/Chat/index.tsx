@@ -4,7 +4,7 @@ import React, { FormEvent, ChangeEvent, useState, useRef, useEffect, useCallback
 import Messages from "./Messages";
 import AgentStatusIndicator from "./AgentStatusIndicator";
 import { Message } from "ai/react";
-import { Paperclip, X, Globe, Plus, Trash2, Users, Bot, Send } from "lucide-react";
+import { Paperclip, X, Globe, Plus, Trash2, Bot, Send } from "lucide-react";
 import { PDFUpload } from "../Context/PDFUpload";
 import { ICard } from "../Context/Card";
 import { IUrlEntry } from "../Context/UrlButton";
@@ -458,7 +458,7 @@ const Chat: React.FC<ChatProps> = ({
       {/* Multiline Chat Input Form */}
       <form
         onSubmit={handleSubmit}
-        className={`flex-shrink-0 mt-4 relative bg-gray-50 dark:bg-gray-900 rounded-xl border shadow-sm transition-all duration-300 ${
+        className={`flex-shrink-0 mt-4 relative bg-white dark:bg-gray-800 rounded-xl border shadow-sm transition-all duration-300 ${
           useAutoGen
             ? 'border-orange-400 dark:border-orange-500 shadow-orange-500/20 shadow-lg hover:shadow-orange-500/30 hover:shadow-xl'
             : 'border-gray-300 dark:border-gray-700'
@@ -481,7 +481,7 @@ const Chat: React.FC<ChatProps> = ({
               onKeyDown={handleKeyDown}
               onCompositionStart={handleCompositionStart}
               onCompositionEnd={handleCompositionEnd}
-              placeholder={useAutoGen ? "Ask your AI agent team...\n(Shift+Enter for new line)" : "Ask about your uploaded PDFs...\n(Shift+Enter for new line)"}
+              placeholder={useAutoGen ? "Ask your AI agent team..." : "Ask about your uploaded PDFs..."}
               rows={1}
               className="relative w-full py-3 pl-4 pr-4 text-gray-900 dark:text-gray-100 bg-transparent resize-none rounded-tl-xl rounded-bl-xl leading-tight focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 transition-all duration-300 overflow-y-auto"
               style={{ height: textareaHeight, outline: 'none', boxShadow: 'none' }}
@@ -514,18 +514,11 @@ const Chat: React.FC<ChatProps> = ({
             >
               <div className={`absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 transition-opacity duration-300 blur-md rounded-lg ${(!input || typeof input !== "string" || input.trim().length === 0) || isLoading ? "opacity-0" : "opacity-0 group-hover:opacity-70"}`}></div>
               <div className={`relative transition-colors ${
-                useAutoGen 
-                  ? 'text-orange-500 dark:text-orange-400' 
+                useAutoGen
+                  ? 'text-orange-500 dark:text-orange-400'
                   : 'text-gray-500 group-hover:text-orange-500 dark:text-gray-400 dark:group-hover:text-orange-400'
               }`}>
-                {useAutoGen ? (
-                  <div className="relative">
-                    <Users size={18} className="relative" />
-                    <Bot size={10} className="absolute -top-1 -right-1 text-orange-600 dark:text-orange-300" />
-                  </div>
-                ) : (
-                  <Bot size={18} />
-                )}
+                <Bot size={18} />
               </div>
             </button>
 
@@ -566,12 +559,6 @@ const Chat: React.FC<ChatProps> = ({
               <div className={`absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 transition-opacity duration-300 blur-md rounded-lg ${(!input || typeof input !== "string" || input.trim().length === 0) || isLoading ? "opacity-0" : "opacity-0 group-hover:opacity-70"}`}></div>
               <Send size={18} className={`relative transition-colors ${(!input || typeof input !== "string" || input.trim().length === 0) || isLoading ? "opacity-70" : ""}`} />
             </button>
-            {/* Submit indicator */}
-            <div className="flex items-center gap-2 pl-2 pr-2 pointer-events-none">
-              {useAutoGen && (
-                <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" title="Multi-Agent Analysis Enabled"></div>
-              )}
-            </div>
           </div>
         </div>
         

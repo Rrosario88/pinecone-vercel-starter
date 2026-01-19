@@ -7,10 +7,11 @@ export default function Header({ className }: { className?: string }) {
     >
       <div className="flex items-center gap-4 group">
         {/* Flame Icon */}
-        <div className="group-hover:scale-110 transition-transform duration-300 ease-in-out">
-          <Flame 
-            size={48} 
-            className="text-orange-600 dark:text-orange-400 drop-shadow-lg" 
+        <div className="relative group-hover:scale-110 transition-transform duration-300 ease-in-out">
+          <div className="absolute inset-0 bg-gradient-to-r from-orange-400 via-red-500 to-yellow-400 opacity-0 group-hover:opacity-30 transition-opacity duration-300 blur-xl rounded-full"></div>
+          <Flame
+            size={48}
+            className="relative text-orange-600 dark:text-orange-400 drop-shadow-lg"
           />
         </div>
         
