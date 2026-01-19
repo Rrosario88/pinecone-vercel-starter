@@ -1,0 +1,86 @@
+# Ingress for External Access
+# CKA Topic: Ingress - HTTP/HTTPS routing to services
+#
+# Ingress provides:
+# - External access to services
+# - Load balancing
+# - SSL/TLS termination
+# - Name-based virtual hosting
+#
+# Prerequisites:
+#   - Ingress controller must be installed (nginx, traefik, etc.)
+#   - For local dev: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+#
+# Commands to practice:
+#   kubectl get ingress -n pinecone-rag
+#   kubectl describe ingress main-ingress -n pinecone-rag
+#   kubectl get ingress main-ingress -n pinecone-rag -o yaml
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: main-ingress
+  namespace: pinecone-rag
+  labels:
+    app: pinecone-rag
+  annotations:
+    # Nginx ingress annotations
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+
+    # Rate limiting (optional)
+    nginx.ingress.kubernetes.io/limit-rps: "10"
+
+    # CORS (optional)
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+
+    # Timeouts
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+
+spec:
+  # Ingress class - use "nginx" for nginx-ingress
+  ingressClassName: nginx
+
+  # TLS configuration (optional)
+  # tls:
+  # - hosts:
+  #   - pinecone-rag.example.com
+  #   secretName: tls-secret
+
+  # Routing rules
+  rules:
+  # Default rule (no host specified = matches all)
+  - http:
+      paths:
+      # Frontend routes
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 80
+
+      # Backend API routes
+      - path: /api/autogen
+        pathType: Prefix
+        backend:
+          service:
+            name: autogen-service
+            port:
+              number: 8000
+
+  # Named host rule (optional)
+  # - host: pinecone-rag.example.com
+  #   http:
+  #     paths:
+  #     - path: /
+  #       pathType: Prefix
+  #       backend:
+  #         service:
+  #           name: frontend
+  #           port:
+  #             number: 80

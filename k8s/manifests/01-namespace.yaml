@@ -1,0 +1,21 @@
+# Namespace for Pinecone RAG Application
+# CKA Topic: Namespaces - Resource isolation and organization
+#
+# Best Practice: Separate applications into their own namespaces
+# This allows for resource quotas, network policies, and RBAC per namespace
+#
+# Commands to practice:
+#   kubectl get namespaces
+#   kubectl describe namespace pinecone-rag
+#   kubectl config set-context --current --namespace=pinecone-rag
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pinecone-rag
+  labels:
+    name: pinecone-rag
+    environment: development
+    app: rag-system
+  annotations:
+    description: "Pinecone RAG Application with AutoGen multi-agent system"
