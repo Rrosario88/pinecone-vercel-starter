@@ -1,3 +1,5 @@
+"use client";
+
 import { Message } from "ai";
 import { useRef, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -42,8 +44,8 @@ export default function Messages({ messages, onRegenerate }: MessagesProps) {
       await navigator.clipboard.writeText(content);
       setCopiedIndex(index);
       setTimeout(() => setCopiedIndex(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy text: ', err);
+    } catch {
+      // Clipboard API failed - silently ignore
     }
   };
 

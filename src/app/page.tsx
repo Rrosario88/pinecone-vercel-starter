@@ -6,9 +6,10 @@ import Header from "@/components/Header";
 import Chat from "@/components/Chat";
 import { useChat } from "ai/react";
 import InstructionModal from "./components/InstructionModal";
-import { HelpCircle } from "lucide-react";
 import { SideMenu } from "@/components/SideMenu";
 import { IUrlEntry } from "@/components/Context/UrlButton";
+import { ICard } from "@/components/Context/Card";
+import { AutoGenConfig, ContextResult, DEFAULT_AUTOGEN_CONFIG } from "@/types";
 
 const Page: React.FC = () => {
   const [gotMessages, setGotMessages] = useState(false);
@@ -21,23 +22,18 @@ const Page: React.FC = () => {
   const [overlap, setOverlap] = useState(1);
   
   // PDF upload state
-  const [uploadedDocuments, setUploadedDocuments] = useState<any[]>([]);
-  const [webCrawlDocuments, setWebCrawlDocuments] = useState<any[]>([]);
-  
+  const [uploadedDocuments, setUploadedDocuments] = useState<ICard[]>([]);
+  const [webCrawlDocuments, setWebCrawlDocuments] = useState<ICard[]>([]);
+
   // URL management state
   const [urlEntries, setUrlEntries] = useState<IUrlEntry[]>([]);
-  
+
   // Shared document cards state
-  const [documentCards, setDocumentCards] = useState<any[]>([]);
-  
+  const [documentCards, setDocumentCards] = useState<ICard[]>([]);
+
   // AutoGen state
   const [useAutoGen, setUseAutoGen] = useState(false);
-  const [autoGenConfig, setAutoGenConfig] = useState({
-    use_researcher: true,
-    use_critic: true,
-    use_summarizer: false,
-    context_strategy: 'comprehensive' as 'comprehensive' | 'focused' | 'quick'
-  });
+  const [autoGenConfig, setAutoGenConfig] = useState<AutoGenConfig>(DEFAULT_AUTOGEN_CONFIG);
 
   // Use the fixed chat endpoint that handles AutoGen properly
   const { messages, input, handleInputChange, handleSubmit, reload, isLoading } = useChat({
@@ -68,8 +64,8 @@ const Page: React.FC = () => {
           messages,
         }),
       });
-      const { context } = await response.json();
-      setContext(context.map((c: any) => c.id));
+      const { context } = await response.json() as { context: ContextResult[] };
+      setContext(context.map((c) => c.id));
     };
     if (gotMessages && messages.length >= prevMessagesLengthRef.current) {
       getContext();
@@ -119,22 +115,12 @@ const Page: React.FC = () => {
             chunkSize={chunkSize}
             overlap={overlap}
             onPDFUpload={(documents) => {
-              console.log('PDF Upload Success - Documents received:', documents.length, 'chunks');
               setUploadedDocuments(documents);
-              setDocumentCards(prev => {
-                const newCards = [...prev, ...documents];
-                console.log('Updated document cards total:', newCards.length);
-                return newCards;
-              });
+              setDocumentCards(prev => [...prev, ...documents]);
             }}
             onWebCrawl={(documents) => {
-              console.log('Web Crawl Success - Documents received:', documents.length, 'chunks');
               setWebCrawlDocuments(documents);
-              setDocumentCards(prev => {
-                const newCards = [...prev, ...documents];
-                console.log('Updated document cards total:', newCards.length);
-                return newCards;
-              });
+              setDocumentCards(prev => [...prev, ...documents]);
             }}
             urlEntries={urlEntries}
             setUrlEntries={setUrlEntries}

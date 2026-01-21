@@ -80,7 +80,6 @@ export const Context: React.FC<ContextProps> = ({
             throw new Error(result.error || 'Failed to delete from Pinecone');
           }
         } catch (error) {
-          console.error('Error deleting PDF:', error);
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           showToast(`Failed to delete PDF: ${errorMessage}`, 'error');
         }
@@ -135,7 +134,6 @@ export const Context: React.FC<ContextProps> = ({
             throw new Error(result.error || 'Failed to delete from Pinecone');
           }
         } catch (error) {
-          console.error('Error deleting web document:', error);
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           showToast(`Failed to delete web document: ${errorMessage}`, 'error');
         }
@@ -163,15 +161,13 @@ export const Context: React.FC<ContextProps> = ({
     try {
       const response = await fetch('/api/sync-documents');
       const data = await response.json();
-      
+
       if (data.success) {
         setDocumentCards(data.documentCards);
-        console.log(`Synced ${data.stats.totalDocuments} document chunks from Pinecone`);
-      } else {
-        console.error('Failed to sync with Pinecone:', data.error);
       }
-    } catch (error) {
-      console.error('Error syncing with Pinecone:', error);
+      // Silently handle sync failures - UI will show current state
+    } catch {
+      // Sync failed - UI will show current cached state
     }
   };
 

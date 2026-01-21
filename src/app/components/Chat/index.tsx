@@ -10,6 +10,7 @@ import { ICard } from "../Context/Card";
 import { IUrlEntry } from "../Context/UrlButton";
 import { useToast } from "../Toast";
 import { crawlDocument } from "../Context/utils";
+import { AutoGenConfig, DEFAULT_AUTOGEN_CONFIG } from "@/types";
 
 interface ChatProps {
   splittingMethod?: string;
@@ -22,12 +23,7 @@ interface ChatProps {
   setDocumentCards: React.Dispatch<React.SetStateAction<ICard[]>>;
   useAutoGen?: boolean;
   onToggleAutoGen?: () => void;
-  autoGenConfig?: {
-    use_researcher: boolean;
-    use_critic: boolean;
-    use_summarizer: boolean;
-    context_strategy: 'comprehensive' | 'focused' | 'quick';
-  };
+  autoGenConfig?: AutoGenConfig;
   // Chat state props
   messages: Message[];
   input: string;
@@ -37,7 +33,7 @@ interface ChatProps {
   isLoading: boolean;
 }
 
-const Chat: React.FC<ChatProps> = ({ 
+const Chat: React.FC<ChatProps> = ({
   splittingMethod = "markdown",
   chunkSize = 256,
   overlap = 1,
@@ -48,12 +44,7 @@ const Chat: React.FC<ChatProps> = ({
   setDocumentCards,
   useAutoGen = false,
   onToggleAutoGen,
-  autoGenConfig = {
-    use_researcher: true,
-    use_critic: true,
-    use_summarizer: false,
-    context_strategy: 'comprehensive'
-  },
+  autoGenConfig = DEFAULT_AUTOGEN_CONFIG,
   // Chat state props
   messages,
   input,
@@ -164,9 +155,14 @@ const Chat: React.FC<ChatProps> = ({
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
       e.preventDefault();
-      handleSubmit(e as any);
+      // Create a synthetic form event for submission
+      const form = e.currentTarget.closest('form');
+      if (form) {
+        const syntheticEvent = new Event('submit', { bubbles: true, cancelable: true });
+        form.dispatchEvent(syntheticEvent);
+      }
     }
-  }, [handleSubmit, isComposing]);
+  }, [isComposing]);
   
   // Handle IME composition events
   const handleCompositionStart = useCallback(() => {
@@ -231,7 +227,7 @@ const Chat: React.FC<ChatProps> = ({
   }, [onPDFUpload, setDocumentCards]);
 
   const handleAllUploadsComplete = React.useCallback(() => {
-    console.log('All uploads completed - keeping modal open for user control');
+    // Upload complete - modal stays open for user control
   }, []);
 
   // Clear upload state when clearTrigger changes

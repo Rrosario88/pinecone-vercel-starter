@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { X, Sun, Moon, Monitor } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
+import { AutoGenConfig, DEFAULT_AUTOGEN_CONFIG } from '@/types';
 
 interface SideMenuProps {
   splittingMethod?: string;
@@ -13,13 +14,8 @@ interface SideMenuProps {
   onOverlapChange?: (overlap: number) => void;
   useAutoGen?: boolean;
   onUseAutoGenChange?: (use: boolean) => void;
-  autoGenConfig?: {
-    use_researcher: boolean;
-    use_critic: boolean;
-    use_summarizer: boolean;
-    context_strategy: 'comprehensive' | 'focused' | 'quick';
-  };
-  onAutoGenConfigChange?: (config: any) => void;
+  autoGenConfig?: AutoGenConfig;
+  onAutoGenConfigChange?: (config: AutoGenConfig) => void;
 }
 
 export function SideMenu({
@@ -31,12 +27,7 @@ export function SideMenu({
   onOverlapChange,
   useAutoGen = false,
   onUseAutoGenChange,
-  autoGenConfig = {
-    use_researcher: true,
-    use_critic: true,
-    use_summarizer: false,
-    context_strategy: 'comprehensive'
-  },
+  autoGenConfig = DEFAULT_AUTOGEN_CONFIG,
   onAutoGenConfigChange,
 }: SideMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -301,7 +292,7 @@ export function SideMenu({
                     </label>
                     <select
                       value={autoGenConfig.context_strategy}
-                      onChange={(e) => onAutoGenConfigChange?.({...autoGenConfig, context_strategy: e.target.value as any})}
+                      onChange={(e) => onAutoGenConfigChange?.({...autoGenConfig, context_strategy: e.target.value as AutoGenConfig['context_strategy']})}
                       className="text-xs p-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     >
                       <option value="comprehensive">Comprehensive</option>
