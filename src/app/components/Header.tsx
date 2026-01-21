@@ -6,11 +6,6 @@ export default function Header({ className }: { className?: string }) {
       className={`flex items-center justify-center text-gray-900 dark:text-gray-100 transition-colors duration-200 ${className}`}
     >
       <div className="flex flex-col items-center gap-2">
-        {/* Project Badge */}
-        <span className="px-3 py-1 text-xs font-medium tracking-wide rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
-          PINECONE-VERCEL-STARTER
-        </span>
-
         <div className="flex items-center gap-4 group">
           {/* Flame Icon */}
         <div className="relative group-hover:scale-110 transition-transform duration-300 ease-in-out">
