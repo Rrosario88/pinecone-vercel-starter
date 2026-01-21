@@ -1,0 +1,38 @@
+# ConfigMap for Application Configuration
+# CKA Topic: ConfigMaps - Non-sensitive configuration data
+#
+# ConfigMaps decouple configuration from container images
+# Can be consumed as environment variables, command-line arguments, or config files
+#
+# Commands to practice:
+#   kubectl get configmap -n pinecone-rag
+#   kubectl describe configmap app-config -n pinecone-rag
+#   kubectl edit configmap app-config -n pinecone-rag
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: pinecone-rag
+  labels:
+    app: pinecone-rag
+data:
+  # Application Configuration
+  NODE_ENV: "production"
+  PORT: "3000"
+  HOSTNAME: "0.0.0.0"
+  NEXT_TELEMETRY_DISABLED: "1"
+
+  # Python Service Configuration
+  PYTHON_PORT: "8000"
+  PYTHONPATH: "/app"
+
+  # Pinecone Configuration (non-sensitive)
+  PINECONE_ENVIRONMENT: "gcp-starter"
+  PINECONE_INDEX: "rag-documents"
+
+  # OpenAI Configuration (non-sensitive)
+  OPENAI_BASE_URL: "https://api.openai.com/v1"
+
+  # AutoGen Service Configuration
+  AUTOGEN_SERVICE_URL: "http://autogen-service:8000"

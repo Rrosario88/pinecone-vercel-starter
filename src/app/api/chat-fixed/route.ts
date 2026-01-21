@@ -10,21 +10,21 @@ export async function POST(req: Request) {
     const { messages, use_autogen = false, agent_config } = await req.json()
     const lastMessage = messages[messages.length - 1]
     
-    // Handle AutoGen requests using single-agent backend with multi-agent formatting
+    // Handle AutoGen requests using real Microsoft AutoGen multi-agent system
     if (use_autogen && process.env.AUTOGEN_SERVICE_URL) {
-      console.log('AutoGen requested - using single-agent backend with multi-agent formatting')
+      console.log('AutoGen requested - using real Microsoft AutoGen multi-agent collaboration')
       
       try {
-        // Call AutoGen service with single-agent mode for reliability
+        // Call AutoGen service with multi-agent mode enabled
         const autoGenResponse = await fetch(`${process.env.AUTOGEN_SERVICE_URL}/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             messages,
-            use_multi_agent: false, // Use single-agent for reliability
+            use_multi_agent: true, // Enable real AutoGen multi-agent collaboration
             agent_config: agent_config || {
               use_researcher: true,
-              use_critic: false, // Disable critic to speed up
+              use_critic: true, // Enable critic agent for quality assurance
               use_summarizer: false,
               context_strategy: 'comprehensive'
             }
@@ -33,9 +33,9 @@ export async function POST(req: Request) {
 
         if (autoGenResponse.ok) {
           const result = await autoGenResponse.json()
-          console.log('Single-agent AutoGen response received')
+          console.log('Multi-agent AutoGen response received')
           
-          // Create multi-agent style formatting from single-agent response
+          // Format multi-agent response from real AutoGen
           let fullResponse = ''
           
           // Add the agent response with multi-agent formatting
@@ -50,20 +50,19 @@ export async function POST(req: Request) {
             fullResponse += `\n\n✅ **Final Response:**\n\n${result.final_response}`
           }
 
-          // Use streamText to create a proper streaming response
+          // Use streamText to create a streaming response that the frontend expects
           const streamResult = await streamText({
-            model: openai('gpt-4o'),
+            model: openai('gpt-4o-mini'),
             messages: [
               {
-                role: 'system',
-                content: 'You are presenting a multi-agent conversation. Display the conversation exactly as provided, maintaining all formatting, agent names, and content without any changes or summarization.'
-              },
-              {
-                role: 'user', 
-                content: `Please present this multi-agent conversation exactly as written:\n\n${fullResponse}`
+                role: 'user',
+                content: fullResponse
               }
             ],
-            temperature: 0
+            temperature: 0,
+            async onFinish() {
+              // Stream complete
+            }
           })
 
           return streamResult.toDataStreamResponse()

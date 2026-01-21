@@ -4,30 +4,20 @@ import React, { FormEvent, ChangeEvent, useState, useRef, useEffect, useCallback
 import Messages from "./Messages";
 import AgentStatusIndicator from "./AgentStatusIndicator";
 import { Message } from "ai/react";
-import { Paperclip, X, Globe, Plus, Trash2, Users, Bot, Send } from "lucide-react";
+import { Paperclip, X, Globe, Plus, Trash2, Bot, Send } from "lucide-react";
 import { PDFUpload } from "../Context/PDFUpload";
 import { ICard } from "../Context/Card";
 import { IUrlEntry } from "../Context/UrlButton";
 import { useToast } from "../Toast";
 import { crawlDocument } from "../Context/utils";
+import { useAppConfig } from "@/context/AppConfigContext";
 
 interface ChatProps {
-  splittingMethod?: string;
-  chunkSize?: number;
-  overlap?: number;
   onPDFUpload?: (documents: ICard[]) => void;
   onWebCrawl?: (documents: ICard[]) => void;
   urlEntries: IUrlEntry[];
   setUrlEntries: React.Dispatch<React.SetStateAction<IUrlEntry[]>>;
   setDocumentCards: React.Dispatch<React.SetStateAction<ICard[]>>;
-  useAutoGen?: boolean;
-  onToggleAutoGen?: () => void;
-  autoGenConfig?: {
-    use_researcher: boolean;
-    use_critic: boolean;
-    use_summarizer: boolean;
-    context_strategy: 'comprehensive' | 'focused' | 'quick';
-  };
   // Chat state props
   messages: Message[];
   input: string;
@@ -37,23 +27,12 @@ interface ChatProps {
   isLoading: boolean;
 }
 
-const Chat: React.FC<ChatProps> = ({ 
-  splittingMethod = "markdown",
-  chunkSize = 256,
-  overlap = 1,
+const Chat: React.FC<ChatProps> = ({
   onPDFUpload,
   onWebCrawl,
   urlEntries,
   setUrlEntries,
   setDocumentCards,
-  useAutoGen = false,
-  onToggleAutoGen,
-  autoGenConfig = {
-    use_researcher: true,
-    use_critic: true,
-    use_summarizer: false,
-    context_strategy: 'comprehensive'
-  },
   // Chat state props
   messages,
   input,
@@ -62,6 +41,8 @@ const Chat: React.FC<ChatProps> = ({
   reload,
   isLoading
 }) => {
+  // Get config from context
+  const { splittingMethod, chunkSize, overlap, useAutoGen, toggleAutoGen } = useAppConfig();
   // Chat state passed as props instead of using useChat hook
   const [showPDFUpload, setShowPDFUpload] = useState(false);
   const [showWebCrawl, setShowWebCrawl] = useState(false);
@@ -164,9 +145,14 @@ const Chat: React.FC<ChatProps> = ({
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
       e.preventDefault();
-      handleSubmit(e as any);
+      // Create a synthetic form event for submission
+      const form = e.currentTarget.closest('form');
+      if (form) {
+        const syntheticEvent = new Event('submit', { bubbles: true, cancelable: true });
+        form.dispatchEvent(syntheticEvent);
+      }
     }
-  }, [handleSubmit, isComposing]);
+  }, [isComposing]);
   
   // Handle IME composition events
   const handleCompositionStart = useCallback(() => {
@@ -231,7 +217,7 @@ const Chat: React.FC<ChatProps> = ({
   }, [onPDFUpload, setDocumentCards]);
 
   const handleAllUploadsComplete = React.useCallback(() => {
-    console.log('All uploads completed - keeping modal open for user control');
+    // Upload complete - modal stays open for user control
   }, []);
 
   // Clear upload state when clearTrigger changes
@@ -458,7 +444,7 @@ const Chat: React.FC<ChatProps> = ({
       {/* Multiline Chat Input Form */}
       <form
         onSubmit={handleSubmit}
-        className={`flex-shrink-0 mt-4 relative bg-gray-50 dark:bg-gray-900 rounded-xl border shadow-sm transition-all duration-300 ${
+        className={`flex-shrink-0 mt-4 relative bg-white dark:bg-gray-800 rounded-xl border shadow-sm transition-all duration-300 ${
           useAutoGen
             ? 'border-orange-400 dark:border-orange-500 shadow-orange-500/20 shadow-lg hover:shadow-orange-500/30 hover:shadow-xl'
             : 'border-gray-300 dark:border-gray-700'
@@ -481,7 +467,7 @@ const Chat: React.FC<ChatProps> = ({
               onKeyDown={handleKeyDown}
               onCompositionStart={handleCompositionStart}
               onCompositionEnd={handleCompositionEnd}
-              placeholder={useAutoGen ? "Ask your AI agent team...\n(Shift+Enter for new line)" : "Ask about your uploaded PDFs...\n(Shift+Enter for new line)"}
+              placeholder={useAutoGen ? "Ask your AI agent team..." : "Ask about your uploaded PDFs..."}
               rows={1}
               className="relative w-full py-3 pl-4 pr-4 text-gray-900 dark:text-gray-100 bg-transparent resize-none rounded-tl-xl rounded-bl-xl leading-tight focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 transition-all duration-300 overflow-y-auto"
               style={{ height: textareaHeight, outline: 'none', boxShadow: 'none' }}
@@ -505,7 +491,7 @@ const Chat: React.FC<ChatProps> = ({
             {/* AutoGen Toggle Button */}
             <button
               type="button"
-              onClick={onToggleAutoGen}
+              onClick={toggleAutoGen}
               className={`group relative p-2 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95 rounded-lg ${
                 useAutoGen ? 'bg-orange-500/10' : ''
               }`}
@@ -514,18 +500,11 @@ const Chat: React.FC<ChatProps> = ({
             >
               <div className={`absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 transition-opacity duration-300 blur-md rounded-lg ${(!input || typeof input !== "string" || input.trim().length === 0) || isLoading ? "opacity-0" : "opacity-0 group-hover:opacity-70"}`}></div>
               <div className={`relative transition-colors ${
-                useAutoGen 
-                  ? 'text-orange-500 dark:text-orange-400' 
+                useAutoGen
+                  ? 'text-orange-500 dark:text-orange-400'
                   : 'text-gray-500 group-hover:text-orange-500 dark:text-gray-400 dark:group-hover:text-orange-400'
               }`}>
-                {useAutoGen ? (
-                  <div className="relative">
-                    <Users size={18} className="relative" />
-                    <Bot size={10} className="absolute -top-1 -right-1 text-orange-600 dark:text-orange-300" />
-                  </div>
-                ) : (
-                  <Bot size={18} />
-                )}
+                <Bot size={18} />
               </div>
             </button>
 
@@ -566,12 +545,6 @@ const Chat: React.FC<ChatProps> = ({
               <div className={`absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 transition-opacity duration-300 blur-md rounded-lg ${(!input || typeof input !== "string" || input.trim().length === 0) || isLoading ? "opacity-0" : "opacity-0 group-hover:opacity-70"}`}></div>
               <Send size={18} className={`relative transition-colors ${(!input || typeof input !== "string" || input.trim().length === 0) || isLoading ? "opacity-70" : ""}`} />
             </button>
-            {/* Submit indicator */}
-            <div className="flex items-center gap-2 pl-2 pr-2 pointer-events-none">
-              {useAutoGen && (
-                <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" title="Multi-Agent Analysis Enabled"></div>
-              )}
-            </div>
           </div>
         </div>
         

@@ -1,0 +1,90 @@
+# Services for Frontend and Backend
+# CKA Topic: Services - Networking and service discovery
+#
+# Service types:
+# - ClusterIP: Internal cluster access (default)
+# - NodePort: Expose on each node's IP at a static port
+# - LoadBalancer: Cloud provider load balancer
+# - ExternalName: CNAME record for external service
+#
+# Commands to practice:
+#   kubectl get svc -n pinecone-rag
+#   kubectl describe svc frontend -n pinecone-rag
+#   kubectl get endpoints -n pinecone-rag
+#   kubectl port-forward svc/frontend 3000:80 -n pinecone-rag
+
+---
+# Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: pinecone-rag
+  labels:
+    app: pinecone-rag
+    component: frontend
+spec:
+  # Service type - ClusterIP for internal, LoadBalancer for external
+  # For local dev: use NodePort or port-forward
+  # For cloud: use LoadBalancer
+  type: ClusterIP
+
+  # Selector matches pod labels from deployment
+  selector:
+    app: pinecone-rag
+    component: frontend
+
+  # Service ports
+  ports:
+  - name: http
+    port: 80          # Service port (what other services see)
+    targetPort: 3000  # Container port (from deployment)
+    protocol: TCP
+
+  # Session affinity (optional)
+  # sessionAffinity: ClientIP
+
+---
+# Backend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: autogen-service
+  namespace: pinecone-rag
+  labels:
+    app: pinecone-rag
+    component: backend
+spec:
+  type: ClusterIP
+
+  selector:
+    app: pinecone-rag
+    component: backend
+
+  ports:
+  - name: http
+    port: 8000        # Service port
+    targetPort: 8000  # Container port
+    protocol: TCP
+
+---
+# Headless Service for StatefulSet (if needed later)
+# CKA: Headless services return pod IPs directly
+# Used for StatefulSets and direct pod-to-pod communication
+apiVersion: v1
+kind: Service
+metadata:
+  name: autogen-headless
+  namespace: pinecone-rag
+  labels:
+    app: pinecone-rag
+    component: backend
+spec:
+  clusterIP: None  # This makes it headless
+  selector:
+    app: pinecone-rag
+    component: backend
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000

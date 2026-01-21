@@ -3,44 +3,24 @@
 import React, { useState } from 'react';
 import { X, Sun, Moon, Monitor } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
+import { useAppConfig } from '@/context/AppConfigContext';
+import { AutoGenConfig } from '@/types';
 
-interface SideMenuProps {
-  splittingMethod?: string;
-  chunkSize?: number;
-  overlap?: number;
-  onSplittingMethodChange?: (method: string) => void;
-  onChunkSizeChange?: (size: number) => void;
-  onOverlapChange?: (overlap: number) => void;
-  useAutoGen?: boolean;
-  onUseAutoGenChange?: (use: boolean) => void;
-  autoGenConfig?: {
-    use_researcher: boolean;
-    use_critic: boolean;
-    use_summarizer: boolean;
-    context_strategy: 'comprehensive' | 'focused' | 'quick';
-  };
-  onAutoGenConfigChange?: (config: any) => void;
-}
-
-export function SideMenu({
-  splittingMethod = 'markdown',
-  chunkSize = 256,
-  overlap = 1,
-  onSplittingMethodChange,
-  onChunkSizeChange,
-  onOverlapChange,
-  useAutoGen = false,
-  onUseAutoGenChange,
-  autoGenConfig = {
-    use_researcher: true,
-    use_critic: true,
-    use_summarizer: false,
-    context_strategy: 'comprehensive'
-  },
-  onAutoGenConfigChange,
-}: SideMenuProps) {
+export function SideMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const { theme, setTheme } = useTheme();
+  const {
+    splittingMethod,
+    setSplittingMethod,
+    chunkSize,
+    setChunkSize,
+    overlap,
+    setOverlap,
+    useAutoGen,
+    setUseAutoGen,
+    autoGenConfig,
+    setAutoGenConfig,
+  } = useAppConfig();
 
   const themes = [
     { value: 'light', icon: Sun, label: 'Light Mode', description: 'Clean white interface' },
@@ -55,11 +35,10 @@ export function SideMenu({
       {/* Menu Button */}
       <button
         onClick={toggleMenu}
-        className="group fixed top-4 right-4 z-50 p-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-full shadow-lg border border-gray-200/50 dark:border-gray-700/50 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
+        className="fixed top-4 right-4 z-50 p-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-full shadow-lg border border-gray-200/50 dark:border-gray-700/50 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
         title="Settings"
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md rounded-full"></div>
-        <svg className="relative w-5 h-5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
@@ -95,7 +74,7 @@ export function SideMenu({
             >
               {/* Background glow on hover */}
               <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md"></div>
-              
+
               {/* Icon without background circle */}
               {(() => {
                 const currentTheme = themes.find(t => t.value === theme) || themes[0];
@@ -103,7 +82,7 @@ export function SideMenu({
                 return <CurrentIcon size={18} className="relative text-gray-600 dark:text-gray-400 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition-all duration-200" />;
               })()}
             </button>
-            
+
             <button
               onClick={toggleMenu}
               className="group relative transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
@@ -121,7 +100,7 @@ export function SideMenu({
             <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 uppercase tracking-wide">
               Document Processing
             </h3>
-            
+
             <div className="space-y-4">
               <div className="flex flex-col">
                 <label className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
@@ -129,14 +108,14 @@ export function SideMenu({
                 </label>
                 <select
                   value={splittingMethod}
-                  onChange={(e) => onSplittingMethodChange?.(e.target.value)}
+                  onChange={(e) => setSplittingMethod(e.target.value as 'markdown' | 'recursive')}
                   className="p-3 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-gray-100 w-full appearance-none hover:cursor-pointer transition-colors focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 >
                   <option value="recursive">Recursive Text Splitting</option>
                   <option value="markdown">Markdown Splitting</option>
                 </select>
               </div>
-              
+
               {splittingMethod === "recursive" && (
                 <div className="space-y-4">
                   <div className="flex flex-col group/slider">
@@ -149,7 +128,7 @@ export function SideMenu({
                       max={2048}
                       step={8}
                       value={chunkSize}
-                      onChange={(e) => onChunkSizeChange?.(parseInt(e.target.value))}
+                      onChange={(e) => setChunkSize(parseInt(e.target.value))}
                       className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider-orange"
                     />
                     <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1 opacity-0 group-hover/slider:opacity-100 transition-all duration-500 ease-in-out transform group-hover/slider:translate-y-0 translate-y-1">
@@ -157,7 +136,7 @@ export function SideMenu({
                       <span className="transition-all duration-500 ease-in-out delay-150">2048 chars</span>
                     </div>
                   </div>
-                  
+
                   <div className="flex flex-col group/overlap">
                     <label className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
                       Overlap: {overlap}
@@ -167,7 +146,7 @@ export function SideMenu({
                       min={1}
                       max={200}
                       value={overlap}
-                      onChange={(e) => onOverlapChange?.(parseInt(e.target.value))}
+                      onChange={(e) => setOverlap(parseInt(e.target.value))}
                       className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider-orange"
                     />
                     <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1 opacity-0 group-hover/overlap:opacity-100 transition-all duration-500 ease-in-out transform group-hover/overlap:translate-y-0 translate-y-1">
@@ -185,7 +164,7 @@ export function SideMenu({
             <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 uppercase tracking-wide">
               Multi-Agent Intelligence
             </h3>
-            
+
             <div className="space-y-4">
               {/* AutoGen Toggle */}
               <div className="flex items-center justify-between">
@@ -200,13 +179,13 @@ export function SideMenu({
                     Enable AutoGen
                   </label>
                 </div>
-                <div 
+                <div
                   className={`group relative w-4 h-4 rounded-full border-2 transition-all duration-300 cursor-pointer hover:scale-110 ${
-                    useAutoGen 
-                      ? 'bg-orange-500 border-orange-500' 
+                    useAutoGen
+                      ? 'bg-orange-500 border-orange-500'
                       : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600'
                   }`}
-                  onClick={() => onUseAutoGenChange?.(!useAutoGen)}
+                  onClick={() => setUseAutoGen(!useAutoGen)}
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md rounded-full"></div>
                   {useAutoGen && (
@@ -229,13 +208,13 @@ export function SideMenu({
                         </svg>
                         <span className="text-gray-800 dark:text-gray-200">Context Explorer</span>
                       </div>
-                      <div 
+                      <div
                         className={`group relative w-3 h-3 rounded-full border-2 transition-all duration-300 cursor-pointer hover:scale-110 ${
-                          autoGenConfig.use_researcher 
-                            ? 'bg-orange-500 border-orange-500' 
+                          autoGenConfig.use_researcher
+                            ? 'bg-orange-500 border-orange-500'
                             : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600'
                         }`}
-                        onClick={() => onAutoGenConfigChange?.({...autoGenConfig, use_researcher: !autoGenConfig.use_researcher})}
+                        onClick={() => setAutoGenConfig({...autoGenConfig, use_researcher: !autoGenConfig.use_researcher})}
                       >
                         <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md rounded-full"></div>
                         {autoGenConfig.use_researcher && (
@@ -245,7 +224,7 @@ export function SideMenu({
                         )}
                       </div>
                     </label>
-                    
+
                     <label className="flex items-center justify-between text-sm cursor-pointer">
                       <div className="flex items-center space-x-2">
                         <svg className="w-3 h-3 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -253,13 +232,13 @@ export function SideMenu({
                         </svg>
                         <span className="text-gray-800 dark:text-gray-200">Quality Assurance</span>
                       </div>
-                      <div 
+                      <div
                         className={`group relative w-3 h-3 rounded-full border-2 transition-all duration-300 cursor-pointer hover:scale-110 ${
-                          autoGenConfig.use_critic 
-                            ? 'bg-orange-500 border-orange-500' 
+                          autoGenConfig.use_critic
+                            ? 'bg-orange-500 border-orange-500'
                             : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600'
                         }`}
-                        onClick={() => onAutoGenConfigChange?.({...autoGenConfig, use_critic: !autoGenConfig.use_critic})}
+                        onClick={() => setAutoGenConfig({...autoGenConfig, use_critic: !autoGenConfig.use_critic})}
                       >
                         <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md rounded-full"></div>
                         {autoGenConfig.use_critic && (
@@ -269,7 +248,7 @@ export function SideMenu({
                         )}
                       </div>
                     </label>
-                    
+
                     <label className="flex items-center justify-between text-sm cursor-pointer">
                       <div className="flex items-center space-x-2">
                         <svg className="w-3 h-3 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -277,13 +256,13 @@ export function SideMenu({
                         </svg>
                         <span className="text-gray-800 dark:text-gray-200">Content Optimizer</span>
                       </div>
-                      <div 
+                      <div
                         className={`group relative w-3 h-3 rounded-full border-2 transition-all duration-300 cursor-pointer hover:scale-110 ${
-                          autoGenConfig.use_summarizer 
-                            ? 'bg-orange-500 border-orange-500' 
+                          autoGenConfig.use_summarizer
+                            ? 'bg-orange-500 border-orange-500'
                             : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600'
                         }`}
-                        onClick={() => onAutoGenConfigChange?.({...autoGenConfig, use_summarizer: !autoGenConfig.use_summarizer})}
+                        onClick={() => setAutoGenConfig({...autoGenConfig, use_summarizer: !autoGenConfig.use_summarizer})}
                       >
                         <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-500/20 opacity-0 group-hover:opacity-70 transition-opacity duration-300 blur-md rounded-full"></div>
                         {autoGenConfig.use_summarizer && (
@@ -302,7 +281,7 @@ export function SideMenu({
                     </label>
                     <select
                       value={autoGenConfig.context_strategy}
-                      onChange={(e) => onAutoGenConfigChange?.({...autoGenConfig, context_strategy: e.target.value as any})}
+                      onChange={(e) => setAutoGenConfig({...autoGenConfig, context_strategy: e.target.value as AutoGenConfig['context_strategy']})}
                       className="text-xs p-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     >
                       <option value="comprehensive">Comprehensive</option>

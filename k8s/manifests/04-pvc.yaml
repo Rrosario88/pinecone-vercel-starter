@@ -1,0 +1,53 @@
+# PersistentVolumeClaim for PDF Storage
+# CKA Topic: Persistent Volumes and Claims - Durable storage for pods
+#
+# PVCs request storage resources from PersistentVolumes
+# Provides data persistence beyond pod lifecycle
+#
+# Commands to practice:
+#   kubectl get pvc -n pinecone-rag
+#   kubectl describe pvc pdf-storage -n pinecone-rag
+#   kubectl get pv  # See bound PersistentVolume
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pdf-storage
+  namespace: pinecone-rag
+  labels:
+    app: pinecone-rag
+    component: storage
+spec:
+  # Access mode - ReadWriteOnce means one node can mount read-write
+  # Other options: ReadOnlyMany, ReadWriteMany
+  accessModes:
+    - ReadWriteOnce
+
+  # Storage class - uses cluster default if not specified
+  # For local dev (Kind/Minikube), use "standard"
+  # For cloud: "gp2" (AWS), "standard-rwo" (GKE), "default" (AKS)
+  storageClassName: standard
+
+  # Requested storage size
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+# Alternative: HostPath PersistentVolume for local development
+# Only use for testing! Not suitable for production multi-node clusters
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pdf-storage-pv
+  labels:
+    type: local
+spec:
+  storageClassName: standard
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data/pdf-uploads"
+    type: DirectoryOrCreate

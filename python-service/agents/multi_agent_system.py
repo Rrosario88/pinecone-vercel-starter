@@ -5,11 +5,12 @@ import logging
 from datetime import datetime
 from typing import List, Dict, Any, Optional, AsyncGenerator
 from autogen_agentchat.agents import AssistantAgent, UserProxyAgent
-from autogen_agentchat.conditions import MaxMessageTermination, TextMentionTermination  
+from autogen_agentchat.conditions import MaxMessageTermination, TextMentionTermination
 from autogen_agentchat.teams import RoundRobinGroupChat
-from autogen_ext.models import OpenAIChatCompletionClient
+from autogen_agentchat.messages import TextMessage
+from autogen_ext.models.openai import OpenAIChatCompletionClient
 from services.pinecone_service import PineconeService
-from models.chat_models import ChatMessage, ChatResponse, AgentMessage, AgentConfig, AgentStatus
+from models.chat_models import ChatMessage, ChatResponse, AgentMessage, AgentConfig, AgentStatus, DocumentInventory
 
 logger = logging.getLogger(__name__)
 
@@ -147,8 +148,7 @@ Always maintain the essential information while improving readability."""
         # User Proxy for orchestration
         self.agents["user_proxy"] = UserProxyAgent(
             name="user_proxy",
-            human_input_mode="NEVER",
-            code_execution_config=False
+            description="User proxy for orchestrating agent conversations"
         )
         
         # Initialize agent statistics
@@ -185,7 +185,8 @@ Always maintain the essential information while improving readability."""
         self,
         messages: List[ChatMessage],
         use_multi_agent: bool = True,
-        agent_config: Optional[AgentConfig] = None
+        agent_config: Optional[AgentConfig] = None,
+        document_inventory: Optional[DocumentInventory] = None
     ) -> ChatResponse:
         """Process chat with multi-agent collaboration"""
         start_time = datetime.now()
@@ -193,15 +194,15 @@ Always maintain the essential information while improving readability."""
         try:
             if not use_multi_agent:
                 # Single agent response
-                return await self._single_agent_response(messages, agent_config)
-            
+                return await self._single_agent_response(messages, agent_config, document_inventory)
+
             # Multi-agent collaboration
-            return await self._multi_agent_collaboration(messages, agent_config)
+            return await self._multi_agent_collaboration(messages, agent_config, document_inventory)
             
         except Exception as e:
             logger.error(f"Chat processing failed: {e}")
             # Fallback to single agent
-            return await self._single_agent_response(messages, agent_config)
+            return await self._single_agent_response(messages, agent_config, document_inventory)
         finally:
             processing_time = (datetime.now() - start_time).total_seconds()
             logger.info(f"Chat processing completed in {processing_time:.2f} seconds")
@@ -209,7 +210,8 @@ Always maintain the essential information while improving readability."""
     async def _single_agent_response(
         self,
         messages: List[ChatMessage],
-        agent_config: Optional[AgentConfig]
+        agent_config: Optional[AgentConfig],
+        document_inventory: Optional[DocumentInventory] = None
     ) -> ChatResponse:
         """Generate response using single agent"""
         try:
@@ -238,25 +240,34 @@ Provide a well-structured, accurate response based on this context. If the conte
             
             # Get response from assistant
             assistant = self.agents["rag_assistant"]
+
+            # Create TextMessage objects for AutoGen
+            message_list = [TextMessage(content=system_message, source="system")]
+            for msg in messages:
+                message_list.append(TextMessage(content=msg.content, source="user"))
+
             response = await assistant.on_messages(
-                messages=[{"role": "system", "content": system_message}] + 
-                         [{"role": msg.role.value, "content": msg.content} for msg in messages]
+                messages=message_list,
+                cancellation_token=None
             )
             
             # Update statistics
             self.agent_stats["rag_assistant"]["message_count"] += 1
             self.agent_stats["rag_assistant"]["last_used"] = datetime.now().isoformat()
-            
+
+            # Extract content from AutoGen Response object
+            response_content = response.chat_message.content if hasattr(response, 'chat_message') else str(response)
+
             return ChatResponse(
                 messages=[
                     AgentMessage(
                         agent_name="rag_assistant",
-                        role="assistant", 
-                        content=response.content if hasattr(response, 'content') else str(response),
+                        role="assistant",
+                        content=response_content,
                         timestamp=datetime.now().isoformat()
                     )
                 ],
-                final_response=response.content if hasattr(response, 'content') else str(response),
+                final_response=response_content,
                 context_used=context_results,
                 processing_time=0.0,
                 agents_involved=["rag_assistant"]
@@ -269,7 +280,8 @@ Provide a well-structured, accurate response based on this context. If the conte
     async def _multi_agent_collaboration(
         self,
         messages: List[ChatMessage],
-        agent_config: Optional[AgentConfig]
+        agent_config: Optional[AgentConfig],
+        document_inventory: Optional[DocumentInventory] = None
     ) -> ChatResponse:
         """Execute multi-agent collaboration"""
         try:
@@ -407,20 +419,21 @@ INSTRUCTIONS:
 Generate your response now."""
             
             assistant = self.agents["rag_assistant"]
-            
-            # Prepare message history
-            message_history = [{"role": "system", "content": system_message}]
+
+            # Prepare message history with TextMessage objects
+            message_history = [TextMessage(content=system_message, source="system")]
             for msg in messages:
-                message_history.append({"role": msg.role.value, "content": msg.content})
-            
+                message_history.append(TextMessage(content=msg.content, source="user"))
+
             # Generate response
-            response = await assistant.on_messages(message_history)
+            response = await assistant.on_messages(message_history, cancellation_token=None)
             
             # Update statistics
             self.agent_stats["rag_assistant"]["message_count"] += 1
             self.agent_stats["rag_assistant"]["last_used"] = datetime.now().isoformat()
-            
-            return response.content if hasattr(response, 'content') else str(response)
+
+            # Extract content from AutoGen Response object
+            return response.chat_message.content if hasattr(response, 'chat_message') else str(response)
             
         except Exception as e:
             logger.error(f"Initial response generation failed: {e}")
@@ -455,10 +468,11 @@ If improvements are needed, provide specific suggestions for enhancement."""
             
             critic = self.agents["critic"]
             critique = await critic.on_messages([
-                {"role": "system", "content": critic_prompt}
-            ])
-            
-            critique_content = critique.content if hasattr(critique, 'content') else str(critique)
+                TextMessage(content=critic_prompt, source="system")
+            ], cancellation_token=None)
+
+            # Extract content from AutoGen Response object
+            critique_content = critique.chat_message.content if hasattr(critique, 'chat_message') else str(critique)
             
             # Update statistics
             self.agent_stats["critic"]["message_count"] += 1
@@ -497,10 +511,11 @@ Generate an improved version that addresses the critique while maintaining accur
             
             assistant = self.agents["rag_assistant"]
             improved = await assistant.on_messages([
-                {"role": "system", "content": improvement_prompt}
-            ])
-            
-            return improved.content if hasattr(improved, 'content') else str(improved)
+                TextMessage(content=improvement_prompt, source="system")
+            ], cancellation_token=None)
+
+            # Extract content from AutoGen Response object
+            return improved.chat_message.content if hasattr(improved, 'chat_message') else str(improved)
             
         except Exception as e:
             logger.error(f"Response improvement failed: {e}")
@@ -518,14 +533,15 @@ RESPONSE TO SUMMARIZE:
 Provide a well-structured summary that captures the essential points."""
             
             summary = await summarizer.on_messages([
-                {"role": "system", "content": summary_prompt}
-            ])
+                TextMessage(content=summary_prompt, source="system")
+            ], cancellation_token=None)
             
             # Update statistics
             self.agent_stats["summarizer"]["message_count"] += 1
             self.agent_stats["summarizer"]["last_used"] = datetime.now().isoformat()
-            
-            return summary.content if hasattr(summary, 'content') else str(summary)
+
+            # Extract content from AutoGen Response object
+            return summary.chat_message.content if hasattr(summary, 'chat_message') else str(summary)
             
         except Exception as e:
             logger.error(f"Summarization failed: {e}")

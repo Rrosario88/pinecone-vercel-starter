@@ -1,0 +1,142 @@
+# AutoGen Backend Service Deployment
+# CKA Topic: Deployments - Declarative updates for Pods and ReplicaSets
+#
+# Deployments provide:
+# - Declarative updates to Pods
+# - Rolling updates and rollbacks
+# - Scaling (manual and auto)
+# - Self-healing (restarts failed pods)
+#
+# Commands to practice:
+#   kubectl get deployments -n pinecone-rag
+#   kubectl describe deployment autogen-backend -n pinecone-rag
+#   kubectl scale deployment autogen-backend --replicas=3 -n pinecone-rag
+#   kubectl rollout status deployment/autogen-backend -n pinecone-rag
+#   kubectl rollout history deployment/autogen-backend -n pinecone-rag
+#   kubectl rollout undo deployment/autogen-backend -n pinecone-rag
+#   kubectl set image deployment/autogen-backend autogen=autogen-rag-service:v2.1 -n pinecone-rag
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autogen-backend
+  namespace: pinecone-rag
+  labels:
+    app: pinecone-rag
+    component: backend
+    version: v2.0
+spec:
+  # Number of pod replicas
+  # CKA: Practice scaling with kubectl scale
+  replicas: 2
+
+  # Selector matches pod labels
+  # MUST match template.metadata.labels
+  selector:
+    matchLabels:
+      app: pinecone-rag
+      component: backend
+
+  # Rolling update strategy
+  # CKA: Understand maxSurge and maxUnavailable
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # Max pods above desired count during update
+      maxUnavailable: 0  # Max pods unavailable during update
+
+  # Pod template
+  template:
+    metadata:
+      labels:
+        app: pinecone-rag
+        component: backend
+        version: v2.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      # Service account for RBAC
+      serviceAccountName: default
+
+      # Container specification
+      containers:
+      - name: autogen
+        image: autogen-rag-service:v2.0
+        imagePullPolicy: IfNotPresent
+
+        # Container port
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+
+        # Environment variables from ConfigMap
+        envFrom:
+        - configMapRef:
+            name: app-config
+
+        # Environment variables from Secret
+        env:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-keys
+              key: OPENAI_API_KEY
+        - name: PINECONE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-keys
+              key: PINECONE_API_KEY
+
+        # Resource limits and requests
+        # CKA: Important for scheduling and QoS
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+
+        # Liveness probe - restart if unhealthy
+        # CKA: Critical for self-healing
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        # Readiness probe - remove from service if not ready
+        # CKA: Important for zero-downtime deployments
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+
+        # Startup probe - for slow-starting containers
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 30
+
+      # Restart policy
+      restartPolicy: Always
+
+      # DNS policy
+      dnsPolicy: ClusterFirst
+
+      # Termination grace period
+      terminationGracePeriodSeconds: 30

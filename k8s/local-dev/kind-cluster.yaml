@@ -1,0 +1,52 @@
+# Kind Cluster Configuration
+# Kind = Kubernetes IN Docker - perfect for local development and CKA practice
+#
+# Install Kind:
+#   brew install kind  # macOS
+#   # or download from: https://kind.sigs.k8s.io/docs/user/quick-start/
+#
+# Create cluster:
+#   kind create cluster --config=k8s/local-dev/kind-cluster.yaml --name pinecone-rag
+#
+# Delete cluster:
+#   kind delete cluster --name pinecone-rag
+#
+# List clusters:
+#   kind get clusters
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+
+# Cluster name
+name: pinecone-rag
+
+# Kubernetes nodes
+nodes:
+- role: control-plane
+  # Port mappings for ingress
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+  extraPortMappings:
+  - containerPort: 80
+    hostPort: 80
+    protocol: TCP
+  - containerPort: 443
+    hostPort: 443
+    protocol: TCP
+  # Resource limits (optional)
+  # image: kindest/node:v1.27.3
+
+# Worker nodes (optional - add more for multi-node practice)
+- role: worker
+- role: worker
+
+# Networking configuration
+networking:
+  # Pod subnet
+  podSubnet: "10.244.0.0/16"
+  # Service subnet
+  serviceSubnet: "10.96.0.0/12"

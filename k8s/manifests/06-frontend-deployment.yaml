@@ -1,0 +1,122 @@
+# Frontend Next.js Application Deployment
+# CKA Topic: Deployments with Volume Mounts
+#
+# This deployment includes a volume mount for PDF uploads
+# Shows how to attach PersistentVolumeClaims to pods
+#
+# Commands to practice:
+#   kubectl get pods -n pinecone-rag -l component=frontend
+#   kubectl logs -f deployment/frontend -n pinecone-rag
+#   kubectl exec -it deployment/frontend -n pinecone-rag -- /bin/sh
+#   kubectl port-forward deployment/frontend 3000:3000 -n pinecone-rag
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: pinecone-rag
+  labels:
+    app: pinecone-rag
+    component: frontend
+    version: v2.0
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: pinecone-rag
+      component: frontend
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+
+  template:
+    metadata:
+      labels:
+        app: pinecone-rag
+        component: frontend
+        version: v2.0
+    spec:
+      containers:
+      - name: frontend
+        image: pinecone-rag-app:v2.0
+        imagePullPolicy: IfNotPresent
+
+        ports:
+        - name: http
+          containerPort: 3000
+          protocol: TCP
+
+        # Environment variables
+        envFrom:
+        - configMapRef:
+            name: app-config
+
+        env:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-keys
+              key: OPENAI_API_KEY
+        - name: PINECONE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-keys
+              key: PINECONE_API_KEY
+
+        # Volume mount for PDF uploads
+        # CKA: Practice with PVCs and volume mounts
+        volumeMounts:
+        - name: pdf-storage
+          mountPath: /app/data/uploads
+          subPath: pdfs  # Create subdirectory in PVC
+
+        # Resource limits
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+
+        # Health checks
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+
+        startupProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 30
+
+      # Volume definition
+      # CKA: Understand how to attach PVCs to pods
+      volumes:
+      - name: pdf-storage
+        persistentVolumeClaim:
+          claimName: pdf-storage
+
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30

@@ -5,6 +5,7 @@ export const metadata = {
 
 import "../global.css";
 import { ThemeProvider } from '@/context/ThemeContext';
+import { AppConfigProvider } from '@/context/AppConfigContext';
 
 export default function RootLayout({
   children,
@@ -15,7 +16,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ThemeProvider>
-          {children}
+          <AppConfigProvider>
+            {children}
+          </AppConfigProvider>
         </ThemeProvider>
       </body>
     </html>

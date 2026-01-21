@@ -19,9 +19,9 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'agents'))
 
-# Import the real multi-agent system
-from real_multi_agent_system import RealMultiAgentRAGSystem as MultiAgentRAGSystem
-logger.info("Successfully imported real AutoGen multi-agent system")
+# Import the real Microsoft AutoGen multi-agent system
+from multi_agent_system import MultiAgentRAGSystem
+logger.info("Successfully imported real Microsoft AutoGen multi-agent system")
 
 from services.pinecone_service import PineconeService
 from models.chat_models import ChatRequest, ChatResponse, AgentMessage
@@ -121,7 +121,7 @@ async def chat_completion(request: ChatRequest):
         # Process the chat request
         response = await multi_agent_system.process_chat(
             messages=request.messages,
-            use_multi_agent=False,  # Force single-agent for performance
+            use_multi_agent=True,  # Enable real AutoGen multi-agent collaboration
             agent_config=request.agent_config,
             document_inventory=request.document_inventory
         )
@@ -143,7 +143,7 @@ async def chat_stream(request: ChatRequest):
             try:
                 async for chunk in multi_agent_system.process_chat_stream(
                     messages=request.messages,
-                    use_multi_agent=False,  # Force single-agent for performance
+                    use_multi_agent=True,  # Enable real AutoGen multi-agent collaboration
                     agent_config=request.agent_config
                 ):
                     yield f"data: {json.dumps(chunk)}\n\n"
@@ -185,7 +185,7 @@ async def websocket_chat(websocket: WebSocket):
                 # Process with multi-agent system
                 async for message in multi_agent_system.process_chat_websocket(
                     messages=request.messages,
-                    use_multi_agent=False,  # Force single-agent for performance
+                    use_multi_agent=True,  # Enable real AutoGen multi-agent collaboration
                     agent_config=request.agent_config
                 ):
                     await websocket.send_json(message)
