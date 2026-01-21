@@ -9,31 +9,22 @@ import InstructionModal from "./components/InstructionModal";
 import { SideMenu } from "@/components/SideMenu";
 import { IUrlEntry } from "@/components/Context/UrlButton";
 import { ICard } from "@/components/Context/Card";
-import { AutoGenConfig, ContextResult, DEFAULT_AUTOGEN_CONFIG } from "@/types";
+import { ContextResult } from "@/types";
+import { useAppConfig } from "@/context/AppConfigContext";
 
 const Page: React.FC = () => {
   const [gotMessages, setGotMessages] = useState(false);
   const [context, setContext] = useState<string[] | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
-  
-  // Splitting method state
-  const [splittingMethod, setSplittingMethod] = useState("markdown");
-  const [chunkSize, setChunkSize] = useState(256);
-  const [overlap, setOverlap] = useState(1);
-  
-  // PDF upload state
+
+  // Get config from context
+  const { useAutoGen, autoGenConfig } = useAppConfig();
+
+  // Document state (still managed here as it's page-specific)
   const [uploadedDocuments, setUploadedDocuments] = useState<ICard[]>([]);
   const [webCrawlDocuments, setWebCrawlDocuments] = useState<ICard[]>([]);
-
-  // URL management state
   const [urlEntries, setUrlEntries] = useState<IUrlEntry[]>([]);
-
-  // Shared document cards state
   const [documentCards, setDocumentCards] = useState<ICard[]>([]);
-
-  // AutoGen state
-  const [useAutoGen, setUseAutoGen] = useState(false);
-  const [autoGenConfig, setAutoGenConfig] = useState<AutoGenConfig>(DEFAULT_AUTOGEN_CONFIG);
 
   // Use the fixed chat endpoint that handles AutoGen properly
   const { messages, input, handleInputChange, handleSubmit, reload, isLoading } = useChat({
@@ -86,34 +77,20 @@ const Page: React.FC = () => {
         </svg>
       </button>
 
-      <SideMenu 
-        splittingMethod={splittingMethod}
-        chunkSize={chunkSize}
-        overlap={overlap}
-        onSplittingMethodChange={setSplittingMethod}
-        onChunkSizeChange={setChunkSize}
-        onOverlapChange={setOverlap}
-        useAutoGen={useAutoGen}
-        onUseAutoGenChange={setUseAutoGen}
-        autoGenConfig={autoGenConfig}
-        onAutoGenConfigChange={setAutoGenConfig}
-      />
-      
+      <SideMenu />
+
       <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-slate-900 transition-colors duration-200">
-        
+
         <Header className="flex-shrink-0 py-4 px-6" />
 
         <InstructionModal
           isOpen={isModalOpen}
           onClose={() => setModalOpen(false)}
         />
-      
+
       <div className="flex flex-1 overflow-hidden relative gap-4 px-4 pb-4">
         <div className="flex-1 min-w-0 flex flex-col h-[calc(100vh-200px)]">
-          <Chat 
-            splittingMethod={splittingMethod}
-            chunkSize={chunkSize}
-            overlap={overlap}
+          <Chat
             onPDFUpload={(documents) => {
               setUploadedDocuments(documents);
               setDocumentCards(prev => [...prev, ...documents]);
@@ -125,10 +102,7 @@ const Page: React.FC = () => {
             urlEntries={urlEntries}
             setUrlEntries={setUrlEntries}
             setDocumentCards={setDocumentCards}
-            useAutoGen={useAutoGen}
-            onToggleAutoGen={() => setUseAutoGen(!useAutoGen)}
-            autoGenConfig={autoGenConfig}
-            // Pass chat state as props
+            // Chat state props
             messages={messages}
             input={input}
             handleInputChange={handleInputChange}
@@ -137,21 +111,18 @@ const Page: React.FC = () => {
             isLoading={isLoading}
           />
         </div>
-        
+
         <div className="hidden lg:flex w-96 flex-col bg-gray-200 dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-700 transition-colors duration-200 h-[calc(100vh-200px)]">
-          <Context 
-            className="w-full h-full" 
+          <Context
+            className="w-full h-full"
             selected={context}
-            splittingMethod={splittingMethod}
-            chunkSize={chunkSize}
-            overlap={overlap}
             urlEntries={urlEntries}
             setUrlEntries={setUrlEntries}
             documentCards={documentCards}
             setDocumentCards={setDocumentCards}
           />
         </div>
-        
+
         <button
           type="button"
           className="group relative lg:hidden fixed bottom-20 right-4 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 shadow-lg transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
@@ -163,14 +134,11 @@ const Page: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg rounded-full"></div>
           <span className="relative">☰</span>
         </button>
-        
+
         <div className="context-panel lg:hidden fixed inset-y-0 right-0 w-80 bg-gray-200 dark:bg-gray-800 shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out border-l border-gray-300 dark:border-gray-700 z-40">
-          <Context 
-            className="h-full" 
+          <Context
+            className="h-full"
             selected={context}
-            splittingMethod={splittingMethod}
-            chunkSize={chunkSize}
-            overlap={overlap}
             urlEntries={urlEntries}
             setUrlEntries={setUrlEntries}
             documentCards={documentCards}

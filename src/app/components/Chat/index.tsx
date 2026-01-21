@@ -10,20 +10,14 @@ import { ICard } from "../Context/Card";
 import { IUrlEntry } from "../Context/UrlButton";
 import { useToast } from "../Toast";
 import { crawlDocument } from "../Context/utils";
-import { AutoGenConfig, DEFAULT_AUTOGEN_CONFIG } from "@/types";
+import { useAppConfig } from "@/context/AppConfigContext";
 
 interface ChatProps {
-  splittingMethod?: string;
-  chunkSize?: number;
-  overlap?: number;
   onPDFUpload?: (documents: ICard[]) => void;
   onWebCrawl?: (documents: ICard[]) => void;
   urlEntries: IUrlEntry[];
   setUrlEntries: React.Dispatch<React.SetStateAction<IUrlEntry[]>>;
   setDocumentCards: React.Dispatch<React.SetStateAction<ICard[]>>;
-  useAutoGen?: boolean;
-  onToggleAutoGen?: () => void;
-  autoGenConfig?: AutoGenConfig;
   // Chat state props
   messages: Message[];
   input: string;
@@ -34,17 +28,11 @@ interface ChatProps {
 }
 
 const Chat: React.FC<ChatProps> = ({
-  splittingMethod = "markdown",
-  chunkSize = 256,
-  overlap = 1,
   onPDFUpload,
   onWebCrawl,
   urlEntries,
   setUrlEntries,
   setDocumentCards,
-  useAutoGen = false,
-  onToggleAutoGen,
-  autoGenConfig = DEFAULT_AUTOGEN_CONFIG,
   // Chat state props
   messages,
   input,
@@ -53,6 +41,8 @@ const Chat: React.FC<ChatProps> = ({
   reload,
   isLoading
 }) => {
+  // Get config from context
+  const { splittingMethod, chunkSize, overlap, useAutoGen, toggleAutoGen } = useAppConfig();
   // Chat state passed as props instead of using useChat hook
   const [showPDFUpload, setShowPDFUpload] = useState(false);
   const [showWebCrawl, setShowWebCrawl] = useState(false);
@@ -501,7 +491,7 @@ const Chat: React.FC<ChatProps> = ({
             {/* AutoGen Toggle Button */}
             <button
               type="button"
-              onClick={onToggleAutoGen}
+              onClick={toggleAutoGen}
               className={`group relative p-2 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95 rounded-lg ${
                 useAutoGen ? 'bg-orange-500/10' : ''
               }`}

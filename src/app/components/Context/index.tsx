@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import UrlButton, { IUrlEntry } from "./UrlButton";
 import { Card, ICard } from "./Card";
 import { PDFDocument } from "./PDFDocument";
@@ -7,29 +7,27 @@ import { clearIndex, crawlDocument } from "./utils";
 import { Button } from "./Button";
 import { useToast } from "../Toast";
 import { ConfirmDialog } from "../ConfirmDialog";
+import { useAppConfig } from "@/context/AppConfigContext";
+
 interface ContextProps {
   className: string;
   selected: string[] | null;
-  splittingMethod?: string;
-  chunkSize?: number;
-  overlap?: number;
   urlEntries: IUrlEntry[];
   setUrlEntries: React.Dispatch<React.SetStateAction<IUrlEntry[]>>;
   documentCards: ICard[];
   setDocumentCards: React.Dispatch<React.SetStateAction<ICard[]>>;
 }
 
-export const Context: React.FC<ContextProps> = ({ 
-  className, 
-  selected, 
-  splittingMethod = "markdown",
-  chunkSize = 256,
-  overlap = 1,
+export const Context: React.FC<ContextProps> = ({
+  className,
+  selected,
   urlEntries,
   setUrlEntries,
   documentCards,
   setDocumentCards
 }) => {
+  // Get config from context
+  const { splittingMethod, chunkSize, overlap } = useAppConfig();
   const [clearTrigger, setClearTrigger] = useState(0);
   const [statusMessage, setStatusMessage] = useState<string>('');
   const { showToast } = useToast();
