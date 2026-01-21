@@ -1,4 +1,6 @@
-# Project: Multi-agent RAG app
+# PINECONE-VERCEL-STARTER
+
+This file defines how Claude Code should work on the PINECONE-VERCEL-STARTER project.
 
 ## Tech stack
 
@@ -9,7 +11,8 @@
 
 ## Goals
 
-- Document RAG over PDFs and crawled sites (chunk → embed with OpenAI → store in Pinecone → semantic search)
+- Document RAG over PDFs and crawled sites
+(chunk → embed with OpenAI → store in Pinecone → semantic search)
 - Multi-agent chat: Researcher, Analyst, Reviewer AutoGen agents
 - Streaming responses via Vercel AI SDK
 - Dark/light mode via React context
@@ -31,7 +34,8 @@
   - Strong typing (no `any`), explicit return types
   - Co-locate components in `src/app/components/` when possible
   - Use Tailwind utility classes; avoid inline styles
-  - Keep server/client components clearly separated in Next.js 15 (use `"use client"` only when needed)
+  - Keep server/client components clearly separated in Next.js 15
+  (use `"use client"` only when needed)
 - React:
   - Use React 19 conventions (modern hooks, no legacy lifecycles)
   - Keep components small and focused; lift state where appropriate
@@ -61,4 +65,5 @@
   - Update or add tests when behavior changes.
 - After coding:
   - Suggest a Conventional Commit message.
-  - Show the git commands to run (status, commit, push) but do not assume branch names.
+  - Show the git commands to run
+  (status, commit, push) but do not assume branch names.
