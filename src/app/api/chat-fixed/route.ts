@@ -1,168 +1,23 @@
-import { Message } from 'ai'
-import { getContextFromMultipleNamespaces } from '@/utils/context'
-import { openai } from '@ai-sdk/openai';
-import { streamText } from 'ai';
+/**
+ * Chat API endpoint (fixed) - RAG-based chat with optional AutoGen multi-agent support.
+ *
+ * This route uses the shared chatService for all chat logic.
+ * For AutoGen features, set AUTOGEN_SERVICE_URL environment variable.
+ *
+ * Note: This endpoint is functionally identical to /api/chat.
+ * Kept for backward compatibility with existing integrations.
+ */
 
-export const runtime = 'nodejs'
+import { handleChatRequest, ChatRequestBody } from '@/utils/chatService';
+
+export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
-    const { messages, use_autogen = false, agent_config } = await req.json()
-    const lastMessage = messages[messages.length - 1]
-    
-    // Handle AutoGen requests using real Microsoft AutoGen multi-agent system
-    if (use_autogen && process.env.AUTOGEN_SERVICE_URL) {
-      console.log('AutoGen requested - using real Microsoft AutoGen multi-agent collaboration')
-      
-      try {
-        // Call AutoGen service with multi-agent mode enabled
-        const autoGenResponse = await fetch(`${process.env.AUTOGEN_SERVICE_URL}/chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages,
-            use_multi_agent: true, // Enable real AutoGen multi-agent collaboration
-            agent_config: agent_config || {
-              use_researcher: true,
-              use_critic: true, // Enable critic agent for quality assurance
-              use_summarizer: false,
-              context_strategy: 'comprehensive'
-            }
-          })
-        })
-
-        if (autoGenResponse.ok) {
-          const result = await autoGenResponse.json()
-          console.log('Multi-agent AutoGen response received')
-          
-          // Format multi-agent response from real AutoGen
-          let fullResponse = ''
-          
-          // Add the agent response with multi-agent formatting
-          if (result.messages && result.messages.length > 0) {
-            const agentMsg = result.messages[0]
-            const agentName = agentMsg.agent_name.charAt(0).toUpperCase() + agentMsg.agent_name.slice(1)
-            fullResponse += `\n\n🤖 **${agentName} Agent:**\n\n${agentMsg.content}`
-          }
-          
-          // Add final response
-          if (result.final_response) {
-            fullResponse += `\n\n✅ **Final Response:**\n\n${result.final_response}`
-          }
-
-          // Use streamText to create a streaming response that the frontend expects
-          const streamResult = await streamText({
-            model: openai('gpt-4o-mini'),
-            messages: [
-              {
-                role: 'user',
-                content: fullResponse
-              }
-            ],
-            temperature: 0,
-            async onFinish() {
-              // Stream complete
-            }
-          })
-
-          return streamResult.toDataStreamResponse()
-        }
-      } catch (error) {
-        console.log('AutoGen service failed, using simulated multi-agent response:', (error as Error).message)
-      }
-    }
-
-    // Fallback: Simulated AutoGen response using context
-    if (use_autogen) {
-      console.log('Using simulated multi-agent response')
-
-      // Single embedding for both namespaces (performance optimization)
-      const contextMap = await getContextFromMultipleNamespaces(
-        lastMessage.content,
-        ['pdf-documents', ''],  // PDF and web namespaces
-        3000, 0.25, 12
-      );
-
-      const context = [contextMap['pdf-documents'], contextMap['default']]
-        .filter(c => c && c.trim() && c !== "No relevant information found in the knowledge base.")
-        .join("\n\n---\n\n");
-      
-      const autoGenPrompt = `You are an AI assistant providing a multi-agent style analysis.
-
-CONTEXT FROM KNOWLEDGE BASE:
-${context || "No specific context available."}
-
-USER QUESTION: ${lastMessage.content}
-
-Please provide a response in this multi-agent format:
-
-🤖 **Researcher Agent:**
-[Gather and present relevant information]
-
-🤖 **Analyst Agent:**
-[Analyze the information and provide insights]
-
-🤖 **Reviewer Agent:**
-[Review and validate the analysis]
-
-✅ **Final Response:**
-[Provide a clear, comprehensive answer]
-
-Be thorough but concise. Use markdown formatting.`
-
-      const result = await streamText({
-        model: openai("gpt-4o"),
-        messages: [
-          {
-            role: 'system',
-            content: autoGenPrompt
-          },
-          {
-            role: 'user',
-            content: lastMessage.content
-          }
-        ]
-      })
-
-      return result.toDataStreamResponse()
-    }
-
-    // Standard chat processing (non-AutoGen)
-    // Single embedding for both namespaces (performance optimization)
-    const contextMap = await getContextFromMultipleNamespaces(
-      lastMessage.content,
-      ['pdf-documents', ''],  // PDF and web namespaces
-      3000, 0.25, 12
-    );
-
-    const context = [contextMap['pdf-documents'], contextMap['default']]
-      .filter(c => c && c.trim() && c !== "No relevant information found in the knowledge base.")
-      .join("\n\n---\n\n");
-    
-    const prompt = [
-      {
-        role: 'system',
-        content: `You are an intelligent document analysis assistant.
-
-CONTEXT FROM YOUR KNOWLEDGE BASE:
-${context}
-
-INSTRUCTIONS:
-- Answer questions using ONLY the information from the provided context
-- Write naturally and conversationally
-- Use clear markdown formatting for better readability
-- If information isn't in your knowledge base, say so clearly`,
-      },
-    ]
-
-    const result = await streamText({
-      model: openai("gpt-4o"),
-      messages: [...prompt, ...messages.filter((message: Message) => message.role === 'user')]
-    });
-
-    return result.toDataStreamResponse();
+    const body: ChatRequestBody = await req.json();
+    return await handleChatRequest(body);
   } catch (e) {
-    console.error('Chat error:', e)
-    throw (e)
+    console.error('Chat error:', e);
+    throw e;
   }
 }
