@@ -1,4 +1,5 @@
 import { Pinecone, type ScoredPineconeRecord, type Index } from "@pinecone-database/pinecone";
+import { logger } from './logger';
 
 export type Metadata = {
   url: string,
@@ -64,7 +65,7 @@ const getMatchesFromEmbeddings = async (embeddings: number[], topK: number, name
     return queryResult.matches || []
   } catch (e) {
     // Log the error and throw it
-    console.log("Error querying embeddings: ", e)
+    logger.error("Error querying embeddings:", e)
     throw new Error(`Error querying embeddings: ${e}`)
   }
 }

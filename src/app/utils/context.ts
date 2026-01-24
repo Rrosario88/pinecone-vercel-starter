@@ -1,6 +1,7 @@
 import { ScoredPineconeRecord } from "@pinecone-database/pinecone";
 import { getMatchesFromEmbeddings } from "./pinecone";
-import { getEmbeddings } from './embeddings'
+import { getEmbeddings } from './embeddings';
+import { logger } from './logger';
 
 export type Metadata = {
   url?: string,
@@ -23,9 +24,9 @@ export const getContextFromMultipleNamespaces = async (
   topK = 8
 ): Promise<Record<string, string>> => {
   // Generate embedding ONCE for all namespaces
-  console.log(`Getting context for query: "${message}" across ${namespaces.length} namespaces`);
+  logger.debug(`Getting context for query: "${message}" across ${namespaces.length} namespaces`);
   const embedding = await getEmbeddings(message);
-  console.log(`Generated single embedding with ${embedding.length} dimensions`);
+  logger.debug(`Generated single embedding with ${embedding.length} dimensions`);
 
   // Query all namespaces in parallel with the same embedding
   const results = await Promise.all(
@@ -56,11 +57,11 @@ export const getContextWithEmbedding = async (
   try {
     // Retrieve matches using pre-computed embedding
     const matches = await getMatchesFromEmbeddings(embedding, topK, namespace);
-    console.log(`Retrieved ${matches.length} potential matches from namespace: ${namespace || 'default'}`);
+    logger.debug(`Retrieved ${matches.length} potential matches from namespace: ${namespace || 'default'}`);
 
     return processMatches(matches, minScore, maxTokens, getOnlyText);
   } catch (error) {
-    console.error('Error in getContextWithEmbedding:', error);
+    logger.error('Error in getContextWithEmbedding:', error);
     return "Error retrieving context from knowledge base.";
   }
 };
@@ -76,19 +77,19 @@ export const getContext = async (
 ): Promise<string | ScoredPineconeRecord[]> => {
 
   try {
-    console.log(`Getting context for query: "${message}"`);
+    logger.debug(`Getting context for query: "${message}"`);
 
     // Get the embeddings of the input message
     const embedding = await getEmbeddings(message);
-    console.log(`Generated embedding with ${embedding.length} dimensions`);
+    logger.debug(`Generated embedding with ${embedding.length} dimensions`);
 
     // Retrieve more matches for better context
     const matches = await getMatchesFromEmbeddings(embedding, topK, namespace);
-    console.log(`Retrieved ${matches.length} potential matches`);
+    logger.debug(`Retrieved ${matches.length} potential matches`);
 
     return processMatches(matches, minScore, maxTokens, getOnlyText);
   } catch (error) {
-    console.error('Error in getContext:', error);
+    logger.error('Error in getContext:', error);
     return "Error retrieving context from knowledge base.";
   }
 }
@@ -105,12 +106,12 @@ function processMatches(
 ): string | ScoredPineconeRecord[] {
   // More permissive filtering for better recall
   const qualifyingDocs = matches.filter(m => m.score && m.score > minScore);
-  console.log(`${qualifyingDocs.length} docs passed similarity threshold (${minScore})`);
+  logger.debug(`${qualifyingDocs.length} docs passed similarity threshold (${minScore})`);
 
   // Log top matches for debugging
   qualifyingDocs.slice(0, 3).forEach((doc, i) => {
     const metadata = doc.metadata as Metadata;
-    console.log(`Match ${i+1}: Score ${doc.score}, Source: ${metadata.filename || metadata.url || 'unknown'}, Page: ${metadata.pageNumber || 'N/A'}`);
+    logger.debug(`Match ${i+1}: Score ${doc.score}, Source: ${metadata.filename || metadata.url || 'unknown'}, Page: ${metadata.pageNumber || 'N/A'}`);
   });
 
   if (!getOnlyText) {
@@ -118,7 +119,7 @@ function processMatches(
   }
 
   if (qualifyingDocs.length === 0) {
-    console.log("No qualifying documents found");
+    logger.debug("No qualifying documents found");
     return "No relevant information found in the knowledge base.";
   }
 
@@ -154,7 +155,7 @@ function processMatches(
   }
 
   const finalContext = contextParts.join('\n\n---\n\n');
-  console.log(`Final context: ${finalContext.length} characters, ~${Math.ceil(finalContext.length/4)} tokens`);
+  logger.debug(`Final context: ${finalContext.length} characters, ~${Math.ceil(finalContext.length/4)} tokens`);
 
   return finalContext;
 }

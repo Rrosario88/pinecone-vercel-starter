@@ -7,6 +7,7 @@ import { Message } from 'ai';
 import { getContextFromMultipleNamespaces } from '@/utils/context';
 import { openai } from '@ai-sdk/openai';
 import { streamText } from 'ai';
+import { logger } from './logger';
 
 export interface ChatRequestBody {
   messages: Message[];
@@ -46,7 +47,7 @@ export async function tryRealAutoGenService(
   if (!serviceUrl) return null;
 
   try {
-    console.log('AutoGen requested - using real Microsoft AutoGen multi-agent collaboration');
+    logger.info('AutoGen requested - using real Microsoft AutoGen multi-agent collaboration');
 
     const autoGenResponse = await fetch(`${serviceUrl}/chat`, {
       method: 'POST',
@@ -66,7 +67,7 @@ export async function tryRealAutoGenService(
     if (!autoGenResponse.ok) return null;
 
     const result = await autoGenResponse.json();
-    console.log('Multi-agent AutoGen response received');
+    logger.info('Multi-agent AutoGen response received');
 
     // Format multi-agent response from real AutoGen
     let fullResponse = '';
@@ -90,7 +91,7 @@ export async function tryRealAutoGenService(
 
     return streamResult.toDataStreamResponse();
   } catch (error) {
-    console.log('AutoGen service failed:', (error as Error).message);
+    logger.warn('AutoGen service failed:', (error as Error).message);
     return null;
   }
 }
@@ -102,7 +103,7 @@ export async function generateSimulatedAutoGenResponse(
   query: string,
   context: string
 ): Promise<Response> {
-  console.log('Using simulated multi-agent response');
+  logger.info('Using simulated multi-agent response');
 
   const autoGenPrompt = `You are an AI assistant providing a multi-agent style analysis.
 

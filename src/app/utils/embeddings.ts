@@ -1,10 +1,10 @@
-
 import { openai } from '@ai-sdk/openai';
 import { embed } from 'ai';
+import { logger } from './logger';
 
 export async function getEmbeddings(input: string): Promise<number[]> {
   try {
-    console.log(`Generating embeddings for text of length: ${input.length}`);
+    logger.debug(`Generating embeddings for text of length: ${input.length}`);
     
     // Create a timeout promise
     const timeoutPromise = new Promise((_, reject) => {
@@ -19,11 +19,11 @@ export async function getEmbeddings(input: string): Promise<number[]> {
     
     const { embedding } = await Promise.race([embeddingPromise, timeoutPromise]) as any;
 
-    console.log(`Generated embedding with ${embedding.length} dimensions`);
+    logger.debug(`Generated embedding with ${embedding.length} dimensions`);
     return embedding;
 
   } catch (e) {
-    console.error("Error calling OpenAI embedding API:", e);
+    logger.error("Error calling OpenAI embedding API:", e);
     throw new Error(`Error calling OpenAI embedding API: ${e}`);
   }
 }

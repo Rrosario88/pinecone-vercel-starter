@@ -1,4 +1,5 @@
 import type { Index, PineconeRecord } from '@pinecone-database/pinecone';
+import { logger } from './logger';
 
 const sliceIntoChunks = <T>(arr: T[], chunkSize: number) => {
   return Array.from({ length: Math.ceil(arr.length / chunkSize) }, (_, i) =>
@@ -26,9 +27,9 @@ export const chunkedUpsert = async (
   // Upsert each chunk of vectors into the index
   const results = await Promise.allSettled(
     chunks.map(async (chunk, chunkIndex) => {
-      console.log(`Upserting chunk ${chunkIndex + 1}/${chunks.length} (${chunk.length} vectors) to namespace: ${namespace}`);
+      logger.debug(`Upserting chunk ${chunkIndex + 1}/${chunks.length} (${chunk.length} vectors) to namespace: ${namespace}`);
       await index.namespace(namespace).upsert(chunk);
-      console.log(`Successfully upserted chunk ${chunkIndex + 1}/${chunks.length}`);
+      logger.debug(`Successfully upserted chunk ${chunkIndex + 1}/${chunks.length}`);
       return chunk.length;
     })
   );
@@ -47,7 +48,7 @@ export const chunkedUpsert = async (
         ? result.reason.message
         : String(result.reason);
       errors.push(`Chunk ${index + 1}: ${errorMsg}`);
-      console.error(`Error upserting chunk ${index + 1}:`, result.reason);
+      logger.error(`Error upserting chunk ${index + 1}:`, result.reason);
     }
   });
 
@@ -60,7 +61,7 @@ export const chunkedUpsert = async (
 
   // If some chunks failed, log a warning but continue
   if (failedChunks > 0) {
-    console.warn(`Warning: ${failedChunks}/${chunks.length} chunks failed to upsert`);
+    logger.warn(`${failedChunks}/${chunks.length} chunks failed to upsert`);
   }
 
   return {
