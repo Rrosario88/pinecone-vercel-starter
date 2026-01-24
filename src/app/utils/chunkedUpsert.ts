@@ -6,32 +6,68 @@ const sliceIntoChunks = <T>(arr: T[], chunkSize: number) => {
   );
 };
 
+export interface ChunkedUpsertResult {
+  success: boolean;
+  totalVectors: number;
+  successfulChunks: number;
+  failedChunks: number;
+  errors: string[];
+}
+
 export const chunkedUpsert = async (
   index: Index,
   vectors: Array<PineconeRecord>,
   namespace: string,
   chunkSize = 10
-) => {
+): Promise<ChunkedUpsertResult> => {
   // Split the vectors into chunks
   const chunks = sliceIntoChunks<PineconeRecord>(vectors, chunkSize);
 
-  try {
-    // Upsert each chunk of vectors into the index
-    await Promise.allSettled(
-      chunks.map(async (chunk) => {
-        try {
-          console.log(`Upserting chunk of ${chunk.length} vectors to namespace: ${namespace}`);
-          await index.namespace(namespace).upsert(chunk);
-          console.log(`Successfully upserted chunk of ${chunk.length} vectors`);
-        } catch (e) {
-          console.error('Error upserting chunk:', e);
-          throw e; // Re-throw to surface the error
-        }
-      })
-    );
+  // Upsert each chunk of vectors into the index
+  const results = await Promise.allSettled(
+    chunks.map(async (chunk, chunkIndex) => {
+      console.log(`Upserting chunk ${chunkIndex + 1}/${chunks.length} (${chunk.length} vectors) to namespace: ${namespace}`);
+      await index.namespace(namespace).upsert(chunk);
+      console.log(`Successfully upserted chunk ${chunkIndex + 1}/${chunks.length}`);
+      return chunk.length;
+    })
+  );
 
-    return true;
-  } catch (e) {
-    throw new Error(`Error upserting vectors into index: ${e}`);
+  // Analyze results
+  const errors: string[] = [];
+  let successfulChunks = 0;
+  let successfulVectors = 0;
+
+  results.forEach((result, index) => {
+    if (result.status === 'fulfilled') {
+      successfulChunks++;
+      successfulVectors += result.value;
+    } else {
+      const errorMsg = result.reason instanceof Error
+        ? result.reason.message
+        : String(result.reason);
+      errors.push(`Chunk ${index + 1}: ${errorMsg}`);
+      console.error(`Error upserting chunk ${index + 1}:`, result.reason);
+    }
+  });
+
+  const failedChunks = chunks.length - successfulChunks;
+
+  // If all chunks failed, throw an error
+  if (successfulChunks === 0 && chunks.length > 0) {
+    throw new Error(`All ${chunks.length} chunks failed to upsert: ${errors.join('; ')}`);
   }
+
+  // If some chunks failed, log a warning but continue
+  if (failedChunks > 0) {
+    console.warn(`Warning: ${failedChunks}/${chunks.length} chunks failed to upsert`);
+  }
+
+  return {
+    success: failedChunks === 0,
+    totalVectors: vectors.length,
+    successfulChunks,
+    failedChunks,
+    errors
+  };
 };
