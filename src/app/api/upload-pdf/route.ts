@@ -7,6 +7,28 @@ import fs from 'fs-extra';
 // Remove edge runtime for file upload support
 // export const runtime = 'edge'
 
+/**
+ * Sanitize filename to prevent path traversal attacks.
+ * Removes directory components and dangerous characters.
+ */
+function sanitizeFilename(filename: string): string {
+  // Extract just the filename (no directory components)
+  const basename = path.basename(filename);
+  // Replace any remaining dangerous characters with underscores
+  // Allow only alphanumeric, dots, hyphens, underscores, and spaces
+  return basename.replace(/[^a-zA-Z0-9.\-_ ]/g, '_');
+}
+
+/**
+ * Validate that a resolved path is within the allowed directory.
+ * Prevents path traversal attacks.
+ */
+function isPathWithinDirectory(filePath: string, directory: string): boolean {
+  const resolvedPath = path.resolve(filePath);
+  const resolvedDir = path.resolve(directory);
+  return resolvedPath.startsWith(resolvedDir + path.sep) || resolvedPath === resolvedDir;
+}
+
 export async function POST(req: NextRequest) {
   try {
     console.log('Upload API called');
@@ -46,9 +68,18 @@ export async function POST(req: NextRequest) {
     const uploadsDir = path.join(process.cwd(), 'uploads', 'pdfs');
     await fs.ensureDir(uploadsDir);
 
-    // Save the file
-    const fileName = `${Date.now()}-${file.name}`;
+    // Save the file with sanitized filename to prevent path traversal
+    const sanitizedName = sanitizeFilename(file.name);
+    if (!sanitizedName || sanitizedName === '.' || sanitizedName === '..') {
+      return NextResponse.json({ success: false, error: 'Invalid filename' }, { status: 400 });
+    }
+    const fileName = `${Date.now()}-${sanitizedName}`;
     const filePath = path.join(uploadsDir, fileName);
+
+    // Double-check path is within uploads directory
+    if (!isPathWithinDirectory(filePath, uploadsDir)) {
+      return NextResponse.json({ success: false, error: 'Invalid file path' }, { status: 400 });
+    }
     
     const buffer = Buffer.from(await file.arrayBuffer());
     await fs.writeFile(filePath, new Uint8Array(buffer));
@@ -64,12 +95,22 @@ export async function POST(req: NextRequest) {
 
     console.log('PDF processing options:', pdfOptions);
 
+    // Validate required environment variables
+    const pineconeIndex = process.env.PINECONE_INDEX;
+    if (!pineconeIndex) {
+      console.error('PINECONE_INDEX environment variable not configured');
+      return NextResponse.json({
+        success: false,
+        error: 'Server configuration error: Pinecone index not configured'
+      }, { status: 500 });
+    }
+
     // Process the PDF and seed to Pinecone
     const documents = await seedPDF(
       filePath,
       file.name,
-      process.env.PINECONE_INDEX!,
-      process.env.PINECONE_CLOUD as ServerlessSpecCloudEnum || 'aws',
+      pineconeIndex,
+      (process.env.PINECONE_CLOUD as ServerlessSpecCloudEnum) || 'aws',
       process.env.PINECONE_REGION || 'us-west-2',
       pdfOptions
     );
@@ -147,8 +188,20 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Filename required' }, { status: 400 });
     }
 
+    // Sanitize and validate filename to prevent path traversal attacks
+    const sanitizedFilename = sanitizeFilename(filename);
+    if (!sanitizedFilename || sanitizedFilename !== filename) {
+      // If sanitization changed the filename, it contained dangerous characters
+      return NextResponse.json({ success: false, error: 'Invalid filename' }, { status: 400 });
+    }
+
     const uploadsDir = path.join(process.cwd(), 'uploads', 'pdfs');
-    const filePath = path.join(uploadsDir, filename);
+    const filePath = path.join(uploadsDir, sanitizedFilename);
+
+    // Validate path is within uploads directory (defense in depth)
+    if (!isPathWithinDirectory(filePath, uploadsDir)) {
+      return NextResponse.json({ success: false, error: 'Invalid file path' }, { status: 400 });
+    }
 
     // Check if file exists
     const exists = await fs.pathExists(filePath);
