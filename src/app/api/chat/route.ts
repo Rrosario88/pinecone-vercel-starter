@@ -1,5 +1,5 @@
 import { Message } from 'ai'
-import { getContext } from '@/utils/context'
+import { getContextFromMultipleNamespaces } from '@/utils/context'
 import { openai } from '@ai-sdk/openai';
 import { streamText } from 'ai';
 
@@ -13,14 +13,17 @@ export async function POST(req: Request) {
     // Handle AutoGen requests with immediate simulated response
     if (use_autogen) {
       console.log('AutoGen requested - using enhanced multi-agent simulation')
-      
-      // Get context for the response
-      const [pdfContext, webContext] = await Promise.all([
-        getContext(lastMessage.content, 'pdf-documents', 3000, 0.25, true, 12),
-        getContext(lastMessage.content, '', 3000, 0.25, true, 12)
-      ]);
 
-      let context = [pdfContext, webContext].filter(c => typeof c === "string" && c.trim() && c !== "No relevant information found in the knowledge base.").join("\n\n---\n\n");
+      // Single embedding for both namespaces (performance optimization)
+      const contextMap = await getContextFromMultipleNamespaces(
+        lastMessage.content,
+        ['pdf-documents', ''],  // PDF and web namespaces
+        3000, 0.25, 12
+      );
+
+      const context = [contextMap['pdf-documents'], contextMap['default']]
+        .filter(c => c && c.trim() && c !== "No relevant information found in the knowledge base.")
+        .join("\n\n---\n\n");
       
       // Create enhanced AutoGen-style prompt
       const autoGenPrompt = `You are an AI assistant providing a comprehensive multi-agent analysis.
@@ -70,12 +73,16 @@ Guidelines:
     }
 
     // Standard chat processing (non-AutoGen)
-    const [pdfContext, webContext] = await Promise.all([
-      getContext(lastMessage.content, 'pdf-documents', 3000, 0.25, true, 12),
-      getContext(lastMessage.content, '', 3000, 0.25, true, 12)
-    ]);
+    // Single embedding for both namespaces (performance optimization)
+    const contextMap = await getContextFromMultipleNamespaces(
+      lastMessage.content,
+      ['pdf-documents', ''],  // PDF and web namespaces
+      3000, 0.25, 12
+    );
 
-    let context = [pdfContext, webContext].filter(c => typeof c === "string" && c.trim() && c !== "No relevant information found in the knowledge base.").join("\n\n---\n\n");
+    const context = [contextMap['pdf-documents'], contextMap['default']]
+      .filter(c => c && c.trim() && c !== "No relevant information found in the knowledge base.")
+      .join("\n\n---\n\n");
     
     const prompt = [
       {
