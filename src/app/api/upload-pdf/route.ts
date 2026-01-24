@@ -3,6 +3,7 @@ import { seedPDF } from '@/utils/pdfProcessor';
 import { ServerlessSpecCloudEnum } from '@pinecone-database/pinecone';
 import path from 'path';
 import fs from 'fs-extra';
+import { validateApiKey } from '@/utils/apiAuth';
 
 // Remove edge runtime for file upload support
 // export const runtime = 'edge'
@@ -30,6 +31,10 @@ function isPathWithinDirectory(filePath: string, directory: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
+  // Validate API key for this operation (uploads modify the index)
+  const authError = validateApiKey(req);
+  if (authError) return authError;
+
   try {
     console.log('Upload API called');
     
@@ -180,6 +185,10 @@ export async function GET() {
 }
 
 export async function DELETE(req: NextRequest) {
+  // Validate API key for this destructive operation
+  const authError = validateApiKey(req);
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(req.url);
     const filename = searchParams.get('filename');

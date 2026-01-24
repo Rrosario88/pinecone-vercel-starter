@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Pinecone } from '@pinecone-database/pinecone';
+import { validateApiKey } from '@/utils/apiAuth';
 
 export async function POST(request: NextRequest) {
+  // Validate API key for this destructive operation
+  const authError = validateApiKey(request);
+  if (authError) return authError;
+
   try {
     const { filename, url, type } = await request.json();
     
