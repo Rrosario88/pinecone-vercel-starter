@@ -2,7 +2,6 @@
 
 import React, { FormEvent, ChangeEvent, useState, useRef, useEffect, useCallback } from "react";
 import Messages from "./Messages";
-import AgentStatusIndicator from "./AgentStatusIndicator";
 import { Message } from "ai/react";
 import { Paperclip, X, Globe, Plus, Trash2, Bot, Send } from "lucide-react";
 import { PDFUpload } from "../Context/PDFUpload";
@@ -11,6 +10,16 @@ import { IUrlEntry } from "../Context/UrlButton";
 import { useToast } from "../Toast";
 import { crawlDocument } from "../Context/utils";
 import { useAppConfig } from "@/context/AppConfigContext";
+
+interface UploadedFile {
+  name: string;
+  size: number;
+  uploadedAt: string;
+  uploading?: boolean;
+  status?: 'uploading' | 'processing' | 'extracting' | 'embedding' | 'indexing' | 'completed' | 'failed';
+  statusMessage?: string;
+  progress?: number;
+}
 
 interface ChatProps {
   onPDFUpload?: (documents: ICard[]) => void;
@@ -47,47 +56,15 @@ const Chat: React.FC<ChatProps> = ({
   const [showPDFUpload, setShowPDFUpload] = useState(false);
   const [showWebCrawl, setShowWebCrawl] = useState(false);
   const [clearTrigger, setClearTrigger] = useState(0);
-  const [currentAgent, setCurrentAgent] = useState<'researcher' | 'analyst' | 'reviewer' | 'finalizing' | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
   const { showToast, ToastContainer } = useToast();
-  
+
   // Multiline textarea specific state
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const shadowTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [textareaHeight, setTextareaHeight] = useState('auto');
   const [isComposing, setIsComposing] = useState(false);
   const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // Agent progression simulation when AutoGen is active
-  useEffect(() => {
-    if (!useAutoGen || !isLoading) {
-      setCurrentAgent(null);
-      setIsGenerating(false);
-      return;
-    }
 
-    setIsGenerating(true);
-    const agentSequence: Array<'researcher' | 'analyst' | 'reviewer' | 'finalizing'> = [
-      'researcher', 'analyst', 'reviewer', 'finalizing'
-    ];
-    
-    let currentIndex = 0;
-    setCurrentAgent(agentSequence[0]);
-    
-    const progressInterval = setInterval(() => {
-      currentIndex++;
-      if (currentIndex < agentSequence.length) {
-        setCurrentAgent(agentSequence[currentIndex]);
-      } else {
-        clearInterval(progressInterval);
-      }
-    }, 2000);
-    
-    return () => {
-      clearInterval(progressInterval);
-    };
-  }, [isLoading, useAutoGen]);
-  
   // Auto-resize textarea functionality
   const adjustTextareaHeight = useCallback(() => {
     if (!textareaRef.current || !shadowTextareaRef.current) return;
@@ -187,41 +164,30 @@ const Chat: React.FC<ChatProps> = ({
   }, []);
   
   // Persistent upload state
-  interface UploadedFile {
-    name: string;
-    size: number;
-    uploadedAt: string;
-    uploading?: boolean;
-    status?: 'uploading' | 'processing' | 'extracting' | 'embedding' | 'indexing' | 'completed' | 'failed';
-    statusMessage?: string;
-    progress?: number;
-  }
-  
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [uploading, setUploading] = useState(false);
 
   // Stable references for state setters
-  const updateUploadedFiles = React.useCallback((files: UploadedFile[] | ((prev: UploadedFile[]) => UploadedFile[])) => {
+  const updateUploadedFiles = useCallback((files: UploadedFile[] | ((prev: UploadedFile[]) => UploadedFile[])) => {
     setUploadedFiles(files);
   }, []);
 
-  const updateUploading = React.useCallback((loading: boolean | ((prev: boolean) => boolean)) => {
+  const updateUploading = useCallback((loading: boolean | ((prev: boolean) => boolean)) => {
     setUploading(loading);
   }, []);
 
-  const handlePDFUploadSuccess = React.useCallback((documents: ICard[]) => {
+  const handlePDFUploadSuccess = useCallback((documents: ICard[]) => {
     onPDFUpload?.(documents);
     setTimeout(() => {
       setDocumentCards(prev => [...prev]);
     }, 2000);
   }, [onPDFUpload, setDocumentCards]);
 
-  const handleAllUploadsComplete = React.useCallback(() => {
-    // Upload complete - modal stays open for user control
-  }, []);
+  // No-op callback - modal stays open for user control after upload
+  const handleAllUploadsComplete = useCallback((): void => undefined, []);
 
   // Clear upload state when clearTrigger changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (clearTrigger > 0) {
       updateUploadedFiles([]);
       updateUploading(false);
@@ -265,22 +231,15 @@ const Chat: React.FC<ChatProps> = ({
     }
   };
 
-  const handleRegenerate = (messageIndex: number) => {
+  // Note: messageIndex is ignored - useChat's reload() only regenerates the last response
+  const handleRegenerate = useCallback((_messageIndex: number) => {
     reload();
-  };
+  }, [reload]);
 
   return (
     <div id="chat" className="flex flex-col h-full w-full max-h-full overflow-hidden">
       <ToastContainer />
       <div className="flex-1 min-h-0 overflow-hidden">
-        {/* Agent Status Indicator */}
-        <div className="p-4 pb-0">
-          <AgentStatusIndicator 
-            isActive={useAutoGen}
-            currentAgent={currentAgent}
-            isGenerating={isGenerating}
-          />
-        </div>
         <Messages messages={messages} onRegenerate={handleRegenerate} />
       </div>
       

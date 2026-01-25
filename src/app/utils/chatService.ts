@@ -67,19 +67,16 @@ export async function tryRealAutoGenService(
     if (!autoGenResponse.ok) return null;
 
     const result = await autoGenResponse.json();
-    logger.info('Multi-agent AutoGen response received');
+    logger.info('AutoGen response received');
 
-    // Format multi-agent response from real AutoGen
+    // Extract the final response content without agent labels
     let fullResponse = '';
 
-    if (result.messages && result.messages.length > 0) {
-      const agentMsg = result.messages[0];
-      const agentName = agentMsg.agent_name.charAt(0).toUpperCase() + agentMsg.agent_name.slice(1);
-      fullResponse += `\n\n🤖 **${agentName} Agent:**\n\n${agentMsg.content}`;
-    }
-
-    if (result.final_response) {
-      fullResponse += `\n\n✅ **Final Response:**\n\n${result.final_response}`;
+    if (typeof result.final_response === 'string') {
+      fullResponse = result.final_response;
+    } else if (result.messages?.length > 0) {
+      // Use the last message content if no final_response
+      fullResponse = result.messages[result.messages.length - 1]?.content ?? '';
     }
 
     // Stream the formatted response
@@ -97,41 +94,31 @@ export async function tryRealAutoGenService(
 }
 
 /**
- * Generate a simulated multi-agent response using GPT-4.
+ * Generate an enhanced response using GPT-4 with RAG context.
  */
-export async function generateSimulatedAutoGenResponse(
+export async function generateEnhancedRAGResponse(
   query: string,
   context: string
 ): Promise<Response> {
-  logger.info('Using simulated multi-agent response');
+  logger.info('Using enhanced RAG response');
 
-  const autoGenPrompt = `You are an AI assistant providing a multi-agent style analysis.
+  const systemPrompt = `You are an intelligent document analysis assistant with comprehensive analytical capabilities.
 
 CONTEXT FROM KNOWLEDGE BASE:
 ${context || "No specific context available."}
 
-USER QUESTION: ${query}
-
-Please provide a response in this multi-agent format:
-
-🤖 **Researcher Agent:**
-[Gather and present relevant information from the context or your knowledge]
-
-🤖 **Analyst Agent:**
-[Analyze the information and provide insights]
-
-🤖 **Reviewer Agent:**
-[Review and validate the analysis]
-
-✅ **Final Response:**
-[Provide a clear, comprehensive answer]
-
-Be thorough but concise. Use markdown formatting.`;
+INSTRUCTIONS:
+- Provide thorough, well-researched answers based on the context
+- Structure your response clearly with headers and sections when appropriate
+- Include relevant details and insights from the provided context
+- If the context doesn't contain relevant information, say so clearly
+- Use markdown formatting for readability
+- Be comprehensive but concise`;
 
   const result = await streamText({
     model: openai("gpt-4o"),
     messages: [
-      { role: 'system', content: autoGenPrompt },
+      { role: 'system', content: systemPrompt },
       { role: 'user', content: query }
     ]
   });
@@ -174,6 +161,12 @@ INSTRUCTIONS:
  */
 export async function handleChatRequest(body: ChatRequestBody): Promise<Response> {
   const { messages, use_autogen = false, agent_config } = body;
+
+  // Validate messages array
+  if (!messages || messages.length === 0) {
+    return new Response('No messages provided', { status: 400 });
+  }
+
   const lastMessage = messages[messages.length - 1];
 
   // Try real AutoGen service first if requested
@@ -183,9 +176,9 @@ export async function handleChatRequest(body: ChatRequestBody): Promise<Response
       return realAutoGenResponse;
     }
 
-    // Fallback to simulated AutoGen
+    // Fallback to enhanced RAG response
     const context = await getRAGContext(lastMessage.content);
-    return generateSimulatedAutoGenResponse(lastMessage.content, context);
+    return generateEnhancedRAGResponse(lastMessage.content, context);
   }
 
   // Standard RAG chat

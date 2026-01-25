@@ -1,7 +1,7 @@
 "use client";
 
 import { Message } from "ai";
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -11,33 +11,46 @@ interface MessagesProps {
 }
 
 export default function Messages({ messages, onRegenerate }: MessagesProps) {
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-  
-  // Auto-scroll to bottom when new messages arrive
+  const shouldAutoScrollRef = useRef(true);
+
+  // Get the last message content for tracking streaming updates
+  const lastMessageContent = messages[messages.length - 1]?.content || '';
+
+  // Check if scrolled near bottom
+  const isNearBottom = useCallback(() => {
+    if (!scrollContainerRef.current) return true;
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+    return scrollHeight - scrollTop - clientHeight < 100;
+  }, []);
+
+  // Scroll to bottom function
+  const scrollToBottom = useCallback(() => {
+    if (!shouldAutoScrollRef.current) return;
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
+  }, []);
+
+  // Handle scroll events - disable auto-scroll if user scrolls up
+  const handleScroll = useCallback(() => {
+    shouldAutoScrollRef.current = isNearBottom();
+  }, [isNearBottom]);
+
+  // Auto-scroll when new messages arrive
   useEffect(() => {
-    const scrollToBottom = () => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
-    
-    // Immediate scroll
+    shouldAutoScrollRef.current = true;
     scrollToBottom();
-    
-    // Additional scroll after a brief delay to handle any layout changes
-    const timeoutId = setTimeout(scrollToBottom, 100);
-    
-    return () => clearTimeout(timeoutId);
-  }, [messages]);
-  
-  // Also scroll when messages array length changes (new message added)
+  }, [messages.length, scrollToBottom]);
+
+  // Auto-scroll during streaming
   useEffect(() => {
-    if (messages.length > 0) {
-      const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      };
+    if (shouldAutoScrollRef.current) {
       scrollToBottom();
     }
-  }, [messages.length]);
+  }, [lastMessageContent, scrollToBottom]);
 
   const copyToClipboard = async (content: string, index: number) => {
     try {
@@ -57,7 +70,10 @@ export default function Messages({ messages, onRegenerate }: MessagesProps) {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-700 h-full max-h-full flex flex-col transition-colors duration-200 shadow-sm overflow-hidden">
-      <div className="flex-1 overflow-y-auto space-y-6 p-6 min-h-0">
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto space-y-6 p-6 min-h-0">
         {messages.map((msg, index) => (
           <div
             key={index}
@@ -228,8 +244,8 @@ export default function Messages({ messages, onRegenerate }: MessagesProps) {
             )}
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
-      <div ref={messagesEndRef} />
     </div>
   );
 }
