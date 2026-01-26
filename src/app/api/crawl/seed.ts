@@ -5,6 +5,7 @@ import { chunkedUpsert } from '../../utils/chunkedUpsert'
 import md5 from "md5";
 import { Crawler, Page } from "./crawler";
 import { truncateStringByBytes } from "@/utils/truncateString"
+import { PineconeIndexSpecification } from '@/utils/PineconeIndexSpecification';
 
 interface SeedOptions {
   splittingMethod: string
@@ -35,21 +36,20 @@ async function seed(url: string, limit: number, indexName: string, cloudName: Se
     // Prepare documents by splitting the pages
     const documents = await Promise.all(pages.map(page => prepareDocument(page, splitter)));
 
+    const indexSpecification = new PineconeIndexSpecification({
+      indexName,
+      cloudName,
+      regionName
+    });
+
     // Create Pinecone index if it does not exist
     const indexList: string[] = (await pinecone.listIndexes())?.indexes?.map(index => index.name) || [];
     const indexExists = indexList.includes(indexName);
     if (!indexExists) {
-      await pinecone.createIndex({
-        name: indexName,
-        dimension: 1536,
-        waitUntilReady: true,
-        spec: { 
-          serverless: { 
-              cloud: cloudName, 
-              region: regionName
-          }
-        } 
-      });
+      await pinecone.createIndex(indexSpecification.buildCreateIndexRequest());
+    } else {
+      const indexDescription = await pinecone.describeIndex(indexName);
+      indexSpecification.validateExistingIndex(indexDescription);
     }
 
     const index = pinecone.Index(indexName)
@@ -61,7 +61,7 @@ async function seed(url: string, limit: number, indexName: string, cloudName: Se
     // Check if content from this URL already exists
     try {
       const existingQuery = await index.query({
-        vector: new Array(1536).fill(0), // Dummy vector for metadata filtering
+        vector: new Array(indexSpecification.getEmbeddingDimension()).fill(0), // Dummy vector for metadata filtering
         filter: { url: url },
         topK: 1,
         includeMetadata: true
@@ -72,7 +72,7 @@ async function seed(url: string, limit: number, indexName: string, cloudName: Se
         
         // Get existing hashes to avoid re-processing identical content
         const existingHashQuery = await index.query({
-          vector: new Array(1536).fill(0),
+          vector: new Array(indexSpecification.getEmbeddingDimension()).fill(0),
           filter: { url: url },
           topK: 10000, // Get all existing chunks for this URL
           includeMetadata: true

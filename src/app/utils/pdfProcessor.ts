@@ -5,7 +5,7 @@ import { chunkedUpsert } from './chunkedUpsert';
 import md5 from "md5";
 import { truncateStringByBytes } from "@/utils/truncateString";
 import fs from 'fs-extra';
-import { getEmbeddingDimension, getEmbeddingModel } from '@/utils/embeddingConfig';
+import { PineconeIndexSpecification } from '@/utils/PineconeIndexSpecification';
 
 // PDF parsing is handled by types/pdf-parse-fork.d.ts
 
@@ -148,33 +148,20 @@ export async function seedPDF(
       pages.map(page => preparePDFDocument(page, splitter, splitByPages, uploadId))
     );
 
-    const embeddingModel = getEmbeddingModel();
-    const embeddingDimension = getEmbeddingDimension(embeddingModel);
+    const indexSpecification = new PineconeIndexSpecification({
+      indexName,
+      cloudName,
+      regionName
+    });
 
     // Create Pinecone index if it does not exist
     const indexList: string[] = (await pinecone.listIndexes())?.indexes?.map(index => index.name) || [];
     const indexExists = indexList.includes(indexName);
     if (!indexExists) {
-      await pinecone.createIndex({
-        name: indexName,
-        dimension: embeddingDimension,
-        waitUntilReady: true,
-        spec: { 
-          serverless: { 
-              cloud: cloudName, 
-              region: regionName
-          }
-        } 
-      });
+      await pinecone.createIndex(indexSpecification.buildCreateIndexRequest());
     } else {
       const indexDescription = await pinecone.describeIndex(indexName);
-      const indexDimension = indexDescription?.dimension;
-      if (indexDimension && indexDimension !== embeddingDimension) {
-        throw new Error(
-          `Pinecone index "${indexName}" has dimension ${indexDimension}, but model "${embeddingModel}" produces ${embeddingDimension}-d vectors. ` +
-          `Set EMBEDDING_MODEL/EMBEDDING_DIMENSION to match the index or recreate the index.`
-        );
-      }
+      indexSpecification.validateExistingIndex(indexDescription);
     }
 
     const index = pinecone.Index(indexName);
