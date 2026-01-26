@@ -207,6 +207,43 @@ Always maintain the essential information while improving readability."""
             processing_time = (datetime.now() - start_time).total_seconds()
             logger.info(f"Chat processing completed in {processing_time:.2f} seconds")
     
+    def _is_inventory_query(self, query: str) -> bool:
+        """Detect if user is asking about document inventory/list"""
+        query_lower = query.lower()
+        inventory_keywords = [
+            "what documents", "which documents", "list documents", "list all",
+            "what files", "which files", "list files", "show documents",
+            "show files", "all documents", "all files", "documents do you have",
+            "files do you have", "what do you have", "what's in", "what is in",
+            "inventory", "available documents", "uploaded documents", "uploaded files",
+            "tell me about all", "describe all", "summarize all"
+        ]
+        return any(keyword in query_lower for keyword in inventory_keywords)
+
+    async def _get_inventory_context(self) -> str:
+        """Get formatted document inventory for context"""
+        try:
+            inventory = await self.pinecone_service.get_document_inventory()
+
+            lines = [f"DOCUMENT INVENTORY ({inventory.get('totalDocuments', 0)} documents, {inventory.get('totalChunks', 0)} total chunks):\n"]
+
+            pdf_docs = inventory.get('pdfDocuments', [])
+            if pdf_docs:
+                lines.append("PDF Documents:")
+                for i, doc in enumerate(pdf_docs, 1):
+                    lines.append(f"  {i}. {doc.get('filename', 'Unknown')} ({doc.get('chunks', 0)} chunks)")
+
+            web_docs = inventory.get('webDocuments', [])
+            if web_docs:
+                lines.append("\nWeb Documents:")
+                for i, doc in enumerate(web_docs, 1):
+                    lines.append(f"  {i}. {doc.get('url', 'Unknown')} ({doc.get('chunks', 0)} chunks)")
+
+            return "\n".join(lines)
+        except Exception as e:
+            logger.error(f"Failed to get inventory context: {e}")
+            return ""
+
     async def _single_agent_response(
         self,
         messages: List[ChatMessage],
@@ -218,25 +255,36 @@ Always maintain the essential information while improving readability."""
             last_message = messages[-1] if messages else None
             if not last_message:
                 raise ValueError("No messages provided")
-            
-            # Get context from Pinecone - search both namespaces
+
+            # Check if this is an inventory query
+            is_inventory = self._is_inventory_query(last_message.content)
+            inventory_context = ""
+            if is_inventory:
+                inventory_context = await self._get_inventory_context()
+
+            # Get context from Pinecone - reduce topK for inventory queries to stay under token limits
+            top_k = 5 if is_inventory else 15
             pdf_results = await self.pinecone_service.search_context(
                 query=last_message.content,
                 namespace="pdf-documents",
-                top_k=15,
+                top_k=top_k,
                 min_score=0.2
             )
             web_results = await self.pinecone_service.search_context(
                 query=last_message.content,
                 namespace="",
-                top_k=15,
+                top_k=top_k,
                 min_score=0.2
             )
             context_results = pdf_results + web_results
-            
-            # Format context
-            context_text = self._format_context(context_results)
-            
+
+            # Format context - truncate for inventory queries
+            context_text = self._format_context(context_results[:10] if is_inventory else context_results)
+
+            # Prepend inventory if available
+            if inventory_context:
+                context_text = f"{inventory_context}\n\n---\n\nSAMPLE CONTENT FROM DOCUMENTS:\n{context_text}"
+
             # Create enhanced system message
             system_message = f"""You are an intelligent RAG assistant. Use the following context to answer the user's question:
 
@@ -296,14 +344,27 @@ Provide a well-structured, accurate response based on this context. If the conte
             last_message = messages[-1] if messages else None
             if not last_message:
                 raise ValueError("No messages provided")
-            
-            # Phase 1: Research
+
+            # Check if this is an inventory query
+            is_inventory = self._is_inventory_query(last_message.content)
+            inventory_context = ""
+            if is_inventory:
+                inventory_context = await self._get_inventory_context()
+
+            # Phase 1: Research - limit results for inventory queries
             context_results = []
             if config.use_researcher:
                 context_results = await self._research_phase(last_message.content, config)
-            
+                if is_inventory:
+                    context_results = context_results[:10]  # Limit to avoid token overflow
+
             # Phase 2: Generate initial response
             context_text = self._format_context(context_results)
+
+            # Prepend inventory if available
+            if inventory_context:
+                context_text = f"{inventory_context}\n\n---\n\nSAMPLE CONTENT FROM DOCUMENTS:\n{context_text}"
+
             initial_response = await self._generate_initial_response(
                 messages, context_text
             )
