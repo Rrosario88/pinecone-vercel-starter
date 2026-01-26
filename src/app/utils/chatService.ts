@@ -105,7 +105,7 @@ export async function tryRealAutoGenService(
 
     // Stream the formatted response
     const streamResult = await streamText({
-      model: openai('gpt-4o-mini'),
+      model: openai('gpt-4.1-mini'),
       messages: [{ role: 'user', content: fullResponse }],
       temperature: 0
     });
@@ -147,7 +147,7 @@ INSTRUCTIONS:
 - Be comprehensive but concise`;
 
   const result = await streamText({
-    model: openai("gpt-4o"),
+    model: openai("gpt-4.1"),
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: query }
@@ -176,7 +176,7 @@ INSTRUCTIONS:
 - If information isn't in your knowledge base, say so clearly`;
 
   const result = await streamText({
-    model: openai("gpt-4o"),
+    model: openai("gpt-4.1"),
     messages: [
       { role: 'system', content: systemPrompt },
       ...messages.filter((message: Message) => message.role === 'user')

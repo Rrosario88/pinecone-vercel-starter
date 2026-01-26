@@ -31,7 +31,7 @@ class MultiAgentRAGSystem:
                 raise ValueError("OPENAI_API_KEY environment variable is required")
             
             self.openai_client = OpenAIChatCompletionClient(
-                model="gpt-4o",
+                model="gpt-4.1",
                 api_key=api_key
             )
             

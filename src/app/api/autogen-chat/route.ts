@@ -205,14 +205,14 @@ export async function POST(req: Request) {
 
         // Use streamText to create a proper streaming response from the complete result
         const streamResult = await streamText({
-          model: openai('gpt-4o'),
+          model: openai('gpt-4.1'),
           messages: [
             {
               role: 'system',
               content: 'You are presenting a multi-agent conversation. Display the conversation exactly as provided, maintaining all formatting, agent names, and content without any changes or summarization.'
             },
             {
-              role: 'user', 
+              role: 'user',
               content: `Please present this multi-agent conversation exactly as written:\n\n${fullResponse}`
             }
           ],
@@ -296,7 +296,7 @@ Format your responses using clear markdown for excellent readability. Only answe
     }
 
     const result = await streamText({
-      model: openai("gpt-4o"),
+      model: openai("gpt-4.1"),
       messages: [prompt, ...messages.filter((message: Message) => message.role === 'user')]
     })
 

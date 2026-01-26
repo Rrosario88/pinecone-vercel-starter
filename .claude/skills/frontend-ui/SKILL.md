@@ -44,6 +44,29 @@ Guidelines:
   - Preserve existing behavior unless explicitly asked to change it.
   - Keep loading and error states explicit (spinners, messages).
 
+Project Coding Principles:
+These must be strictly enforced in all frontend code and proposed changes:
+
+- **File Length and Structure**: Never allow a file to exceed 500 lines. If a
+  file approaches 400 lines, break it up immediately. Treat 1000 lines as
+  unacceptable, even temporarily. Use folders and naming conventions to keep
+  small files logically grouped.
+- **OOP First**: Every functionality should be in a dedicated class, struct,
+  or protocol, even if it's small. Favor composition over inheritance, but
+  always use object-oriented thinking. Code must be built for reuse, not just
+  to "make it work." (Adapt to React: Use functional components with hooks
+  for state/logic encapsulation, but think in terms of composable, reusable
+  modules.)
+- **Single Responsibility Principle**: Every file, class, and function should
+  do one thing only. If it has multiple responsibilities, split it
+  immediately. Each view, manager, or utility should be laser-focused on one
+  concern.
+- **Modular Design**: Code should connect like Lego – interchangeable,
+  testable, and isolated. Ask: "Can I reuse this class in a different screen
+  or project?" If not, refactor it. Reduce tight coupling between components.
+  Favor dependency injection or protocols (in React: Use props, contexts, or
+  hooks for loose coupling).
+
 When done:
 
 - Show full file contents for modified components.
