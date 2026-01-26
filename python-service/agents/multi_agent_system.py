@@ -219,13 +219,20 @@ Always maintain the essential information while improving readability."""
             if not last_message:
                 raise ValueError("No messages provided")
             
-            # Get context from Pinecone
-            context_results = await self.pinecone_service.search_context(
+            # Get context from Pinecone - search both namespaces
+            pdf_results = await self.pinecone_service.search_context(
+                query=last_message.content,
+                namespace="pdf-documents",
+                top_k=15,
+                min_score=0.2
+            )
+            web_results = await self.pinecone_service.search_context(
                 query=last_message.content,
                 namespace="",
-                top_k=8,
-                min_score=0.3
+                top_k=15,
+                min_score=0.2
             )
+            context_results = pdf_results + web_results
             
             # Format context
             context_text = self._format_context(context_results)
@@ -351,47 +358,53 @@ Provide a well-structured, accurate response based on this context. If the conte
     async def _research_phase(self, query: str, config: AgentConfig) -> List[Dict[str, Any]]:
         """Execute research phase to gather context"""
         try:
-            # Define search strategies based on config
+            # Define search strategies based on config - increased topK for better coverage
             strategies = [
-                {"name": "primary", "top_k": 5, "min_score": 0.4},
-                {"name": "comprehensive", "top_k": 8, "min_score": 0.3},
+                {"name": "primary", "top_k": 15, "min_score": 0.25},
+                {"name": "comprehensive", "top_k": 20, "min_score": 0.2},
             ]
-            
+
             if config.context_strategy == "focused":
-                strategies = [{"name": "focused", "top_k": 3, "min_score": 0.5}]
+                strategies = [{"name": "focused", "top_k": 10, "min_score": 0.3}]
             elif config.context_strategy == "comprehensive":
                 strategies.extend([
-                    {"name": "expanded", "top_k": 10, "min_score": 0.2},
-                    {"name": "related", "query_modification": "related information about", "top_k": 5, "min_score": 0.3}
+                    {"name": "expanded", "top_k": 25, "min_score": 0.15},
+                    {"name": "related", "query_modification": "related information about", "top_k": 15, "min_score": 0.2}
                 ])
             
-            # Execute multiple search strategies
-            strategy_results = await self.pinecone_service.search_multiple_strategies(
+            # Execute multiple search strategies on BOTH namespaces
+            pdf_results = await self.pinecone_service.search_multiple_strategies(
+                query=query,
+                strategies=strategies,
+                namespace="pdf-documents"
+            )
+            web_results = await self.pinecone_service.search_multiple_strategies(
                 query=query,
                 strategies=strategies,
                 namespace=""
             )
-            
-            # Combine and deduplicate results
+
+            # Combine and deduplicate results from both namespaces
             all_results = []
             seen_content = set()
-            
-            for strategy_name, results in strategy_results.items():
-                for result in results:
-                    content_hash = hash(result["content"])
-                    if content_hash not in seen_content:
-                        seen_content.add(content_hash)
-                        result["strategy"] = strategy_name
-                        all_results.append(result)
-            
+
+            for strategy_results in [pdf_results, web_results]:
+                for strategy_name, results in strategy_results.items():
+                    for result in results:
+                        content_hash = hash(result["content"])
+                        if content_hash not in seen_content:
+                            seen_content.add(content_hash)
+                            result["strategy"] = strategy_name
+                            all_results.append(result)
+
             # Sort by relevance score
             all_results.sort(key=lambda x: x["score"], reverse=True)
-            
+
             # Update statistics
             self.agent_stats["researcher"]["message_count"] += 1
             self.agent_stats["researcher"]["last_used"] = datetime.now().isoformat()
-            
-            return all_results[:15]  # Limit to top 15 results
+
+            return all_results[:30]  # Increased limit to top 30 results
             
         except Exception as e:
             logger.error(f"Research phase failed: {e}")

@@ -217,5 +217,42 @@ describe('chatService', () => {
       const response = await handleChatRequest(body);
       expect(response).toBeInstanceOf(Response);
     });
+
+    it('should fall back when AutoGen request is aborted (timeout)', async () => {
+      const abortError = new Error('The operation was aborted');
+      abortError.name = 'AbortError';
+      global.fetch = jest.fn().mockRejectedValueOnce(abortError);
+
+      const body: ChatRequestBody = {
+        messages: [{ id: '1', role: 'user', content: 'test' }],
+        use_autogen: true
+      };
+
+      // Should fall back to enhanced RAG on timeout
+      const response = await handleChatRequest(body);
+      expect(response).toBeInstanceOf(Response);
+    });
+
+    it('should pass AbortSignal to fetch', async () => {
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ final_response: 'test response' })
+      });
+
+      const body: ChatRequestBody = {
+        messages: [{ id: '1', role: 'user', content: 'test' }],
+        use_autogen: true
+      };
+
+      await handleChatRequest(body);
+
+      // Verify fetch was called with signal
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          signal: expect.any(AbortSignal)
+        })
+      );
+    });
   });
 });

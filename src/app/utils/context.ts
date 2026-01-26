@@ -19,9 +19,9 @@ export type Metadata = {
 export const getContextFromMultipleNamespaces = async (
   message: string,
   namespaces: string[],
-  maxTokens = 4000,
-  minScore = 0.5,
-  topK = 8
+  maxTokens = 5000,
+  minScore = 0.2,
+  topK = 25
 ): Promise<Record<string, string>> => {
   // Generate embedding ONCE for all namespaces
   logger.debug(`Getting context for query: "${message}" across ${namespaces.length} namespaces`);
@@ -49,10 +49,10 @@ export const getContextFromMultipleNamespaces = async (
 export const getContextWithEmbedding = async (
   embedding: number[],
   namespace: string = '',
-  maxTokens = 4000,
-  minScore = 0.5,
+  maxTokens = 5000,
+  minScore = 0.2,
   getOnlyText = true,
-  topK = 8
+  topK = 25
 ): Promise<string | ScoredPineconeRecord[]> => {
   try {
     // Retrieve matches using pre-computed embedding
@@ -70,10 +70,10 @@ export const getContextWithEmbedding = async (
 export const getContext = async (
   message: string,
   namespace: string = '',
-  maxTokens = 4000,
-  minScore = 0.5, // Lowered for better recall
+  maxTokens = 5000,
+  minScore = 0.2, // Lower threshold for better document discovery
   getOnlyText = true,
-  topK = 8 // Increased for better context
+  topK = 25 // Higher for better document coverage
 ): Promise<string | ScoredPineconeRecord[]> => {
 
   try {

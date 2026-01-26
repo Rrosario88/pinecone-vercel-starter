@@ -47,7 +47,7 @@ class PineconeService:
             logger.error(f"Failed to initialize Pinecone service: {e}")
             raise
     
-    async def get_embeddings(self, text: str, model: str = "text-embedding-3-small") -> List[float]:
+    async def get_embeddings(self, text: str, model: str = "text-embedding-ada-002") -> List[float]:
         """Get embeddings for a text using OpenAI"""
         try:
             response = await self.openai_client.embeddings.create(
@@ -61,11 +61,11 @@ class PineconeService:
             raise
     
     async def search_context(
-        self, 
-        query: str, 
-        namespace: str = "", 
-        top_k: int = 5,
-        min_score: float = -1.0
+        self,
+        query: str,
+        namespace: str = "",
+        top_k: int = 20,
+        min_score: float = 0.2
     ) -> List[Dict[str, Any]]:
         """Search for relevant context in Pinecone"""
         try:

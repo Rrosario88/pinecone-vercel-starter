@@ -118,7 +118,7 @@ test.describe('AutoGen Toggle Functionality', () => {
     await page.goto('http://localhost:3000');
     
     // Get initial placeholder
-    const chatInput = page.locator('input[placeholder*="Ask about"]');
+    const chatInput = page.locator('textarea[placeholder*="Ask about"], input[placeholder*="Ask about"]');
     const initialPlaceholder = await chatInput.getAttribute('placeholder');
     console.log('Initial placeholder:', initialPlaceholder);
     

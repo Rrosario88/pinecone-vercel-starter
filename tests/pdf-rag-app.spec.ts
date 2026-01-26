@@ -11,7 +11,7 @@ test.describe('PDF RAG Application - Basic Structure', () => {
     await page.goto('http://localhost:3000');
     
     // Check for chat input
-    const chatInput = page.locator('input[placeholder*="Ask about"]');
+    const chatInput = page.locator('textarea[placeholder*="Ask about"], input[placeholder*="Ask about"]').first();
     await expect(chatInput).toBeVisible();
   });
 
@@ -202,7 +202,7 @@ test.describe('PDF RAG Application - Chat Functionality', () => {
   test('can type in chat input', async ({ page }) => {
     await page.goto('http://localhost:3000');
     
-    const chatInput = page.locator('input[placeholder*="Ask about"]');
+    const chatInput = page.locator('textarea[placeholder*="Ask about"], input[placeholder*="Ask about"]').first();
     await chatInput.fill('Hello, this is a test message');
     
     const inputValue = await chatInput.inputValue();
@@ -212,7 +212,7 @@ test.describe('PDF RAG Application - Chat Functionality', () => {
   test('chat input has proper placeholder text', async ({ page }) => {
     await page.goto('http://localhost:3000');
     
-    const chatInput = page.locator('input[placeholder*="Ask about"]');
+    const chatInput = page.locator('textarea[placeholder*="Ask about"], input[placeholder*="Ask about"]').first();
     const placeholder = await chatInput.getAttribute('placeholder');
     
     expect(placeholder).toContain('Ask about');
@@ -234,7 +234,7 @@ test.describe('PDF RAG Application - Responsive Design', () => {
     await page.goto('http://localhost:3000');
     
     // Check that main elements are still visible
-    const chatInput = page.locator('input[placeholder*="Ask about"]');
+    const chatInput = page.locator('textarea[placeholder*="Ask about"], input[placeholder*="Ask about"]').first();
     await expect(chatInput).toBeVisible();
     
     // Check that icons are still accessible

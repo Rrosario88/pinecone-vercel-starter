@@ -16,7 +16,7 @@ test.describe('AutoGen Complete Functionality Test', () => {
     console.log('✅ AutoGen enabled successfully');
     
     // Step 2: Check that placeholder text changed
-    const chatInput = page.locator('input[placeholder*="Ask about"]');
+    const chatInput = page.locator('textarea[placeholder*="Ask about"], input[placeholder*="Ask about"]');
     const placeholder = await chatInput.getAttribute('placeholder');
     console.log('Chat placeholder:', placeholder);
     expect(placeholder).toContain('AI agent team');

@@ -9,6 +9,24 @@ import { openai } from '@ai-sdk/openai';
 import { streamText } from 'ai';
 import { logger } from './logger';
 
+/** RAG retrieval configuration */
+const RAG_CONFIG = {
+  /** Maximum tokens to retrieve from context */
+  maxTokens: 5000,
+  /** Minimum similarity score threshold */
+  minScore: 0.2,
+  /** Number of top results to retrieve per namespace */
+  topK: 25,
+  /** Namespaces to search */
+  namespaces: ['pdf-documents', ''] as const,
+} as const;
+
+/** AutoGen service configuration */
+const AUTOGEN_CONFIG = {
+  /** Request timeout in milliseconds */
+  timeoutMs: 30000,
+} as const;
+
 export interface ChatRequestBody {
   messages: Message[];
   use_autogen?: boolean;
@@ -26,8 +44,10 @@ export interface ChatRequestBody {
 export async function getRAGContext(query: string): Promise<string> {
   const contextMap = await getContextFromMultipleNamespaces(
     query,
-    ['pdf-documents', ''],  // PDF and web namespaces
-    3000, 0.25, 12
+    [...RAG_CONFIG.namespaces],
+    RAG_CONFIG.maxTokens,
+    RAG_CONFIG.minScore,
+    RAG_CONFIG.topK
   );
 
   return [contextMap['pdf-documents'], contextMap['default']]
@@ -46,6 +66,9 @@ export async function tryRealAutoGenService(
   const serviceUrl = process.env.AUTOGEN_SERVICE_URL;
   if (!serviceUrl) return null;
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), AUTOGEN_CONFIG.timeoutMs);
+
   try {
     logger.info('AutoGen requested - using real Microsoft AutoGen multi-agent collaboration');
 
@@ -61,7 +84,8 @@ export async function tryRealAutoGenService(
           use_summarizer: false,
           context_strategy: 'comprehensive'
         }
-      })
+      }),
+      signal: controller.signal
     });
 
     if (!autoGenResponse.ok) return null;
@@ -88,8 +112,15 @@ export async function tryRealAutoGenService(
 
     return streamResult.toDataStreamResponse();
   } catch (error) {
-    logger.warn('AutoGen service failed:', (error as Error).message);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    if (errorMessage.includes('aborted')) {
+      logger.warn('AutoGen service timed out');
+    } else {
+      logger.warn('AutoGen service failed:', errorMessage);
+    }
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

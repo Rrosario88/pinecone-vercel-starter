@@ -122,7 +122,7 @@ test.describe('Theme System', () => {
       }
       
       // Check chat input
-      const chatInput = page.locator('input[placeholder*="Ask about"]');
+      const chatInput = page.locator('textarea[placeholder*="Ask about"], input[placeholder*="Ask about"]');
       if (await chatInput.isVisible()) {
         const inputBg = await chatInput.evaluate(el => window.getComputedStyle(el).backgroundColor);
         expect(inputBg).toBeDefined();

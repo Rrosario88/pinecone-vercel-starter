@@ -199,15 +199,23 @@ const Chat: React.FC<ChatProps> = ({
   };
 
   const handleAddUrl = (url: string, title?: string) => {
-    if (url && !urlEntries.some(entry => entry.url === url)) {
-      const newEntry: IUrlEntry = {
-        url,
-        title: title || new URL(url).hostname,
-        seeded: false,
-        loading: false,
-      };
-      setUrlEntries(prev => [...prev, newEntry]);
+    if (!url || urlEntries.some(entry => entry.url === url)) return;
+
+    let hostname: string;
+    try {
+      hostname = new URL(url).hostname;
+    } catch {
+      showToast('Invalid URL format', 'error');
+      return;
     }
+
+    const newEntry: IUrlEntry = {
+      url,
+      title: title || hostname,
+      seeded: false,
+      loading: false,
+    };
+    setUrlEntries(prev => [...prev, newEntry]);
   };
 
   const handleRemoveUrl = (index: number) => {
@@ -224,11 +232,8 @@ const Chat: React.FC<ChatProps> = ({
       overlap,
       showToast
     );
-    
-    const urlEntry = urlEntries.find(entry => entry.url === url);
-    if (urlEntry?.seeded) {
-      handleWebCrawlSuccess([]);
-    }
+    // crawlDocument sets seeded=true internally on success
+    handleWebCrawlSuccess([]);
   };
 
   // Note: messageIndex is ignored - useChat's reload() only regenerates the last response

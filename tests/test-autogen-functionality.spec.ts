@@ -14,7 +14,7 @@ test.describe('Test AutoGen Functionality End-to-End', () => {
     expect(title).toContain('ON');
     
     // Type a test message
-    const chatInput = page.locator('input[placeholder*="Ask about"]');
+    const chatInput = page.locator('textarea[placeholder*="Ask about"], input[placeholder*="Ask about"]');
     await chatInput.fill('What is AutoGen and how does it work?');
     
     // Submit the message
