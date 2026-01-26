@@ -14,6 +14,11 @@ class PineconeService:
         self.openai_client = None
         self.index = None
         self.index_name = os.getenv("PINECONE_INDEX", "")
+        self.embedding_model = self._get_embedding_model()
+    
+    @staticmethod
+    def _get_embedding_model() -> str:
+        return os.getenv("EMBEDDING_MODEL") or os.getenv("OPENAI_EMBEDDING_MODEL") or "text-embedding-3-small"
         
     async def initialize(self):
         """Initialize Pinecone and OpenAI clients"""
@@ -47,12 +52,13 @@ class PineconeService:
             logger.error(f"Failed to initialize Pinecone service: {e}")
             raise
     
-    async def get_embeddings(self, text: str, model: str = "text-embedding-ada-002") -> List[float]:
+    async def get_embeddings(self, text: str, model: Optional[str] = None) -> List[float]:
         """Get embeddings for a text using OpenAI"""
         try:
+            embedding_model = model or self.embedding_model
             response = await self.openai_client.embeddings.create(
                 input=text,
-                model=model
+                model=embedding_model
             )
             return response.data[0].embedding
             

@@ -21,6 +21,86 @@ const RAG_CONFIG = {
   namespaces: ['pdf-documents', ''] as const,
 } as const;
 
+/** Inventory query detection keywords */
+const INVENTORY_KEYWORDS = [
+  "what documents", "which documents", "list documents", "list all",
+  "what files", "which files", "list files", "show documents",
+  "show files", "all documents", "all files", "documents do you have",
+  "files do you have", "what do you have", "what's in", "what is in",
+  "inventory", "available documents", "uploaded documents", "uploaded files",
+  "tell me about all", "describe all", "summarize all"
+];
+
+/**
+ * Detect if a query is asking for document inventory
+ */
+function isInventoryQuery(query: string): boolean {
+  const queryLower = query.toLowerCase();
+  return INVENTORY_KEYWORDS.some(keyword => queryLower.includes(keyword));
+}
+
+/**
+ * Get document inventory from the API
+ */
+export async function getDocumentInventory(): Promise<string> {
+  try {
+    const response = await fetch(getDocumentInventoryUrl());
+    if (!response.ok) {
+      throw new Error(`Failed to fetch inventory: ${response.status}`);
+    }
+    const data = await response.json();
+
+    if (!data.success || !data.inventory) {
+      throw new Error('Invalid inventory response');
+    }
+
+    const inventory = data.inventory;
+    let result = 'DOCUMENT INVENTORY:\n\n';
+
+    // PDF Documents
+    if (inventory.pdf.count > 0) {
+      result += `PDF Documents (${inventory.pdf.count} files, ${inventory.pdf.totalChunks} chunks):\n`;
+      inventory.pdf.documents.forEach((doc: any, index: number) => {
+        result += `${index + 1}. ${doc.name} (${doc.chunks} chunks)\n`;
+      });
+      result += '\n';
+    }
+
+    // Web Documents
+    if (inventory.web.count > 0) {
+      result += `Web Documents (${inventory.web.count} files, ${inventory.web.totalChunks} chunks):\n`;
+      inventory.web.documents.forEach((doc: any, index: number) => {
+        result += `${index + 1}. ${doc.name} (${doc.chunks} chunks)\n`;
+      });
+      result += '\n';
+    }
+
+    // Summary
+    result += `TOTAL: ${inventory.total.documents} documents, ${inventory.total.chunks} chunks`;
+
+    return result;
+  } catch (error) {
+    logger.error('Failed to get document inventory:', error);
+    return 'Error: Could not retrieve document inventory. Please try again.';
+  }
+}
+
+function getDocumentInventoryUrl(): string {
+  if (typeof window !== 'undefined') {
+    return '/api/document-inventory';
+  }
+
+  if (process.env.NEXTAUTH_URL) {
+    return `${process.env.NEXTAUTH_URL}/api/document-inventory`;
+  }
+
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}/api/document-inventory`;
+  }
+
+  return 'http://localhost:3000/api/document-inventory';
+}
+
 /** AutoGen service configuration */
 const AUTOGEN_CONFIG = {
   /** Request timeout in milliseconds */
@@ -199,6 +279,34 @@ export async function handleChatRequest(body: ChatRequestBody): Promise<Response
   }
 
   const lastMessage = messages[messages.length - 1];
+
+  // Check if this is an inventory query
+  if (isInventoryQuery(lastMessage.content)) {
+    logger.info('Inventory query detected, fetching document inventory');
+    const inventory = await getDocumentInventory();
+
+    const systemPrompt = `You are an intelligent document analysis assistant.
+
+DOCUMENT INVENTORY:
+${inventory}
+
+INSTRUCTIONS:
+- Provide a clear, comprehensive list of all documents
+- Organize by type (PDF and web documents)
+- Include relevant details like chunk counts
+- Present the information in a well-formatted, easy-to-read way
+- Be accurate and complete`;
+
+    const result = await streamText({
+      model: openai("gpt-4.1"),
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: lastMessage.content }
+      ]
+    });
+
+    return result.toDataStreamResponse();
+  }
 
   // Try real AutoGen service first if requested
   if (use_autogen) {

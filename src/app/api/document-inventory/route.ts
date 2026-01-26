@@ -1,120 +1,35 @@
 import { NextResponse } from 'next/server';
+import { getEmbeddings } from '@/utils/embeddings';
+import { getContextWithEmbedding } from '@/utils/context';
+import { buildDocumentInventory } from '@/utils/documentInventory';
+import type { ScoredPineconeRecord } from '@pinecone-database/pinecone';
 
 export async function GET() {
   try {
-    // Use the existing test-query API to get document information
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-    
-    // Get PDF documents by querying the pdf namespace
-    const pdfResponse = await fetch(`${baseUrl}/api/test-query`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        query: 'document', // Generic query to get results
-        topK: 1000, // Get many results
-        namespace: 'pdf-documents'
-      })
-    });
+    const inventoryQuery = 'document inventory';
+    const topK = Number.parseInt(process.env.INVENTORY_TOP_K || '1000', 10);
+    const embedding = await getEmbeddings(inventoryQuery);
 
-    // Get web documents from default namespace
-    const webResponse = await fetch(`${baseUrl}/api/test-query`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        query: 'document', // Generic query to get results
-        topK: 1000, // Get many results
-        namespace: ''
-      })
-    });
+    const [pdfResults, webResults] = await Promise.all([
+      getContextWithEmbedding(embedding, 'pdf-documents', 5000, 0, false, topK),
+      getContextWithEmbedding(embedding, '', 5000, 0, false, topK),
+    ]);
 
-    let pdfData = { pdfNamespace: { data: [] } };
-    let webData = { defaultNamespace: { data: [] } };
-
-    if (pdfResponse.ok) {
-      pdfData = await pdfResponse.json();
+    if (typeof pdfResults === 'string') {
+      throw new Error(pdfResults);
+    }
+    if (typeof webResults === 'string') {
+      throw new Error(webResults);
     }
 
-    if (webResponse.ok) {
-      webData = await webResponse.json();
-    }
-
-    // Process PDF documents
-    const pdfDocuments = new Set<string>();
-    const pdfDetails: Array<{
-      name: string;
-      type: 'pdf';
-      chunks: number;
-      uploadId: string;
-    }> = [];
-    
-    pdfData.pdfNamespace?.data?.forEach((item: any) => {
-      if (item.metadata?.filename) {
-        if (!pdfDocuments.has(item.metadata.filename)) {
-          pdfDocuments.add(item.metadata.filename);
-          pdfDetails.push({
-            name: item.metadata.filename,
-            type: 'pdf',
-            chunks: 1, // Will count up
-            uploadId: item.metadata.uploadId || 'unknown'
-          });
-        } else {
-          // Increment chunk count
-          const doc = pdfDetails.find(d => d.name === item.metadata.filename);
-          if (doc) doc.chunks++;
-        }
-      }
-    });
-
-    // Process web documents
-    const webDocuments = new Set<string>();
-    const webDetails: Array<{
-      name: string;
-      type: 'web';
-      chunks: number;
-    }> = [];
-    
-    webData.defaultNamespace?.data?.forEach((item: any) => {
-      if (item.metadata?.url) {
-        if (!webDocuments.has(item.metadata.url)) {
-          webDocuments.add(item.metadata.url);
-          webDetails.push({
-            name: item.metadata.url,
-            type: 'web',
-            chunks: 1 // Will count up
-          });
-        } else {
-          // Increment chunk count
-          const doc = webDetails.find(d => d.name === item.metadata.url);
-          if (doc) doc.chunks++;
-        }
-      }
-    });
-
-    const totalPdfChunks = pdfDetails.reduce((sum, doc) => sum + doc.chunks, 0);
-    const totalWebChunks = webDetails.reduce((sum, doc) => sum + doc.chunks, 0);
+    const inventory = buildDocumentInventory(
+      pdfResults as ScoredPineconeRecord[],
+      webResults as ScoredPineconeRecord[]
+    );
 
     return NextResponse.json({
       success: true,
-      inventory: {
-        pdf: {
-          count: pdfDocuments.size,
-          totalChunks: totalPdfChunks,
-          documents: pdfDetails
-        },
-        web: {
-          count: webDocuments.size,
-          totalChunks: totalWebChunks,
-          documents: webDetails
-        },
-        total: {
-          documents: pdfDocuments.size + webDocuments.size,
-          chunks: totalPdfChunks + totalWebChunks
-        }
-      }
+      inventory
     });
 
   } catch (error) {

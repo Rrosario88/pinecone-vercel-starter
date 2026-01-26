@@ -2,7 +2,7 @@
  * Tests for chatService.ts
  */
 
-import { ChatRequestBody, handleChatRequest, getRAGContext } from './chatService';
+import { ChatRequestBody, handleChatRequest, getDocumentInventory, getRAGContext } from './chatService';
 
 // Mock dependencies
 jest.mock('@/utils/context', () => ({
@@ -120,6 +120,55 @@ describe('chatService', () => {
       const context = await getRAGContext('test query');
 
       expect(context).toBe('Valid context');
+    });
+  });
+
+  describe('getDocumentInventory', () => {
+    afterEach(() => {
+      delete process.env.NEXTAUTH_URL;
+      delete process.env.VERCEL_URL;
+    });
+
+    it('uses NEXTAUTH_URL when running server-side', async () => {
+      process.env.NEXTAUTH_URL = 'http://localhost:3000';
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          success: true,
+          inventory: {
+            pdf: { count: 0, totalChunks: 0, documents: [] },
+            web: { count: 0, totalChunks: 0, documents: [] },
+            total: { documents: 0, chunks: 0 }
+          }
+        })
+      });
+
+      await getDocumentInventory();
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'http://localhost:3000/api/document-inventory'
+      );
+    });
+
+    it('falls back to VERCEL_URL when NEXTAUTH_URL is not set', async () => {
+      process.env.VERCEL_URL = 'example.vercel.app';
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          success: true,
+          inventory: {
+            pdf: { count: 0, totalChunks: 0, documents: [] },
+            web: { count: 0, totalChunks: 0, documents: [] },
+            total: { documents: 0, chunks: 0 }
+          }
+        })
+      });
+
+      await getDocumentInventory();
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://example.vercel.app/api/document-inventory'
+      );
     });
   });
 

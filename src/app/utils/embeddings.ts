@@ -1,6 +1,7 @@
 import { openai } from '@ai-sdk/openai';
 import { embed } from 'ai';
 import { logger } from './logger';
+import { getEmbeddingModel } from './embeddingConfig';
 
 export async function getEmbeddings(input: string): Promise<number[]> {
   try {
@@ -10,10 +11,11 @@ export async function getEmbeddings(input: string): Promise<number[]> {
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error('Embedding request timed out after 30 seconds')), 30000);
     });
-    
+
     // Race between the embedding request and timeout
+    const embeddingModel = getEmbeddingModel();
     const embeddingPromise = embed({
-      model: openai.embedding('text-embedding-ada-002'),
+      model: openai.embedding(embeddingModel),
       value: input.replace(/\n/g, ' ')
     });
     

@@ -11,6 +11,7 @@ export type Metadata = {
 // Singleton Pinecone client - initialized once, reused across requests
 let pineconeClient: Pinecone | null = null;
 let pineconeIndex: Index<Metadata> | null = null;
+let currentIndexName = '';
 let indexValidated = false;
 
 /**
@@ -21,6 +22,13 @@ const getPineconeIndex = async (): Promise<Index<Metadata>> => {
   const indexName = process.env.PINECONE_INDEX || '';
   if (indexName === '') {
     throw new Error('PINECONE_INDEX environment variable not set');
+  }
+
+  // Check if index name changed - if so, reset cache
+  if (currentIndexName !== indexName) {
+    pineconeIndex = null;
+    indexValidated = false;
+    currentIndexName = indexName;
   }
 
   // Return cached index if already validated
