@@ -14,20 +14,20 @@ load_dotenv()
 # Add the current directory to Python path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from agents.real_multi_agent_system import RealMultiAgentRAGSystem
+from agents.multi_agent_system import MultiAgentRAGSystem
 from services.pinecone_service import PineconeService
 from models.chat_models import ChatMessage, MessageRole
 
 async def test_autogen_endpoint():
     """Test the AutoGen system like the actual endpoint would"""
     print("Testing AutoGen system endpoint functionality...")
-    
+
     try:
         # Initialize services like the main app does
         pinecone_service = PineconeService()
         await pinecone_service.initialize()
-        
-        autogen_system = RealMultiAgentRAGSystem(pinecone_service)
+
+        autogen_system = MultiAgentRAGSystem(pinecone_service)
         await autogen_system.initialize()
         
         # Simulate a request like the endpoint would receive

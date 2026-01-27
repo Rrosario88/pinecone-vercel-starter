@@ -15,21 +15,21 @@ sys.path.append('agents')
 load_dotenv()
 
 from services.pinecone_service import PineconeService
-from agents.real_multi_agent_system import RealMultiAgentRAGSystem
+from agents.multi_agent_system import MultiAgentRAGSystem
 from models.chat_models import ChatMessage, ChatRequest, AgentConfig
 
 async def test_system():
     """Test the complete system"""
-    print("🚀 Initializing Real AutoGen Multi-Agent System...")
-    
+    print("🚀 Initializing AutoGen Multi-Agent System...")
+
     # Initialize services
     pinecone_service = PineconeService()
     await pinecone_service.initialize()
     print("✅ Pinecone service initialized")
-    
-    multi_agent_system = RealMultiAgentRAGSystem(pinecone_service)
+
+    multi_agent_system = MultiAgentRAGSystem(pinecone_service)
     await multi_agent_system.initialize()
-    print("✅ Real multi-agent system initialized")
+    print("✅ Multi-agent system initialized")
     
     # Test single agent response
     print("\n📝 Testing single agent response...")

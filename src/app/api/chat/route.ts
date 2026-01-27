@@ -6,10 +6,17 @@
  */
 
 import { handleChatRequest, ChatRequestBody } from '@/utils/chatService';
+import { checkRateLimit, rateLimiters } from '@/utils/rateLimit';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
+  // Apply rate limiting (20 requests per minute for chat)
+  const rateLimitResponse = checkRateLimit(req, rateLimiters.chat);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const body: ChatRequestBody = await req.json();
     return await handleChatRequest(body);

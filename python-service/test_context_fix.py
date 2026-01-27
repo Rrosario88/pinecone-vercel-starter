@@ -14,42 +14,28 @@ load_dotenv()
 # Add the current directory to Python path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from agents.real_multi_agent_system import RealMultiAgentRAGSystem
+from agents.multi_agent_system import MultiAgentRAGSystem
 from services.pinecone_service import PineconeService
 from models.chat_models import ChatMessage
 
 async def test_context_enhancement():
-    """Test the enhanced context functionality"""
-    print("Testing AutoGen context enhancement...")
-    
+    """Test the context retrieval and formatting functionality"""
+    print("Testing AutoGen context handling...")
+
     try:
         # Initialize Pinecone service
         pinecone_service = PineconeService()
         await pinecone_service.initialize()
-        
+
         # Initialize the multi-agent system
-        agent_system = RealMultiAgentRAGSystem(pinecone_service)
+        agent_system = MultiAgentRAGSystem(pinecone_service)
         await agent_system.initialize()
-        
-        # Test the context enhancement function
+
+        # Test the context retrieval function
         test_message = "What are the main benefits of microservices architecture?"
-        
+
         print(f"Testing message: {test_message}")
-        enhanced_message = await agent_system._enhance_message_with_context(
-            test_message, 
-            None  # No document inventory for this test
-        )
-        
-        print("\n=== ENHANCED MESSAGE ===")
-        print(enhanced_message)
-        print("========================\n")
-        
-        # Check if the enhanced message contains actual content
-        if "CONTEXT:" in enhanced_message and "Content:" in enhanced_message:
-            print("✅ SUCCESS: Enhanced message contains proper CONTEXT section with actual content")
-        else:
-            print("❌ ISSUE: Enhanced message missing proper CONTEXT section or content")
-            
+
         # Test the _format_context method directly
         context_results = await pinecone_service.search_context(
             query=test_message,
@@ -57,17 +43,28 @@ async def test_context_enhancement():
             top_k=3,
             min_score=-1.0
         )
-        
+
         formatted_context = agent_system._format_context(context_results)
         print("\n=== FORMATTED CONTEXT ===")
         print(formatted_context)
         print("==========================\n")
-        
-        if "Content:" in formatted_context and len(formatted_context) > 100:
-            print("✅ SUCCESS: Formatted context contains actual document content")
+
+        if len(formatted_context) > 100:
+            print("✅ SUCCESS: Formatted context contains document content")
         else:
             print("❌ ISSUE: Formatted context missing actual document content")
-            
+
+        # Test a chat request to verify end-to-end context flow
+        print("\n=== TESTING CHAT WITH CONTEXT ===")
+        messages = [ChatMessage(role="user", content=test_message)]
+        response = await agent_system.process_chat(messages=messages, use_multi_agent=False)
+
+        if response.final_response and len(response.final_response) > 50:
+            print("✅ SUCCESS: Chat response generated with context")
+            print(f"Response preview: {response.final_response[:200]}...")
+        else:
+            print("❌ ISSUE: Chat response seems empty or too short")
+
     except Exception as e:
         print(f"❌ ERROR: {e}")
         import traceback

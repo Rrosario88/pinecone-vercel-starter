@@ -104,8 +104,8 @@ function processMatches(
   maxTokens: number,
   getOnlyText: boolean
 ): string | ScoredPineconeRecord[] {
-  // More permissive filtering for better recall
-  const qualifyingDocs = matches.filter(m => m.score && m.score > minScore);
+  // Filter by minimum score threshold (null-safe, handles zero scores correctly)
+  const qualifyingDocs = matches.filter(m => m.score != null && m.score >= minScore);
   logger.debug(`${qualifyingDocs.length} docs passed similarity threshold (${minScore})`);
 
   // Log top matches for debugging

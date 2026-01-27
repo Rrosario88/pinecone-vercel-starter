@@ -1,23 +1,32 @@
 import { streamText } from 'ai'
 import { Message } from 'ai'
 import { openai } from '@ai-sdk/openai'
+import { checkRateLimit, rateLimiters } from '@/utils/rateLimit'
 
 export const runtime = 'nodejs'
+
+interface AgentConfig {
+  use_researcher?: boolean
+  use_critic?: boolean
+  use_summarizer?: boolean
+  max_rounds?: number
+  temperature?: number
+  context_strategy?: 'comprehensive' | 'focused' | 'quick'
+}
 
 interface AutoGenRequest {
   messages: Message[]
   use_multi_agent?: boolean
-  agent_config?: {
-    use_researcher?: boolean
-    use_critic?: boolean
-    use_summarizer?: boolean
-    max_rounds?: number
-    temperature?: number
-    context_strategy?: 'comprehensive' | 'focused' | 'quick'
-  }
+  agent_config?: AgentConfig
   stream?: boolean
   namespace?: string
-  document_inventory?: any
+  document_inventory?: Record<string, unknown>
+}
+
+interface AgentMessageMetadata {
+  tokens_used?: number
+  model?: string
+  [key: string]: unknown
 }
 
 interface AutoGenResponse {
@@ -26,10 +35,10 @@ interface AutoGenResponse {
     role: string
     content: string
     timestamp: string
-    metadata?: any
+    metadata?: AgentMessageMetadata
   }>
   final_response: string
-  context_used: Array<any>
+  context_used: Array<{ content: string; source: string; score: number }>
   processing_time: number
   agents_involved: string[]
   conversation_summary?: string
@@ -38,14 +47,27 @@ interface AutoGenResponse {
 const AUTOGEN_SERVICE_URL = process.env.AUTOGEN_SERVICE_URL || 'http://localhost:8000'
 
 export async function POST(req: Request) {
+  // Apply rate limiting (20 requests per minute for chat)
+  const rateLimitResponse = checkRateLimit(req, rateLimiters.chat)
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
+
+  // Parse request body once at the top to avoid double-read issues
+  let body: AutoGenRequest
   try {
-    const body = await req.json()
-    const { messages, use_multi_agent = true, agent_config, namespace = '' } = body
+    body = await req.json()
+  } catch {
+    return Response.json({ error: 'Invalid JSON in request body' }, { status: 400 })
+  }
 
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return Response.json({ error: 'Messages array is required and cannot be empty' }, { status: 400 })
-    }
+  const { messages, use_multi_agent = true, agent_config, namespace = '' } = body
 
+  if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    return Response.json({ error: 'Messages array is required and cannot be empty' }, { status: 400 })
+  }
+
+  try {
     console.log('AutoGen request received, processing...')
 
     // Try to get streaming response from AutoGen service first
@@ -234,14 +256,13 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error('AutoGen chat error:', error)
-    
-    // Final fallback
+
+    // Final fallback - use already-parsed messages from body (no re-reading req.json())
     try {
-      const { messages } = await req.json()
       return await fallbackToOriginalChat(messages)
     } catch (fallbackError) {
       console.error('Fallback chat error:', fallbackError)
-      return Response.json({ 
+      return Response.json({
         error: 'Both AutoGen and fallback chat failed',
         details: error instanceof Error ? error.message : 'Unknown error'
       }, { status: 500 })

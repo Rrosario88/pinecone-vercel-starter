@@ -4,6 +4,7 @@ import { ServerlessSpecCloudEnum } from '@pinecone-database/pinecone';
 import path from 'path';
 import fs from 'fs-extra';
 import { validateApiKey } from '@/utils/apiAuth';
+import { checkRateLimit, rateLimiters } from '@/utils/rateLimit';
 
 // Remove edge runtime for file upload support
 // export const runtime = 'edge'
@@ -31,6 +32,10 @@ function isPathWithinDirectory(filePath: string, directory: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
+  // Apply rate limiting (10 uploads per minute)
+  const rateLimitResponse = checkRateLimit(req, rateLimiters.upload);
+  if (rateLimitResponse) return rateLimitResponse;
+
   // Validate API key for this operation (uploads modify the index)
   const authError = validateApiKey(req);
   if (authError) return authError;
