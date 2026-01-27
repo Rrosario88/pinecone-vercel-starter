@@ -5,6 +5,7 @@ import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
+import { MessageCopyController } from "./MessageCopyController";
 
 interface MessagesProps {
   messages: Message[];
@@ -53,15 +54,14 @@ export default function Messages({ messages, onRegenerate }: MessagesProps) {
     }
   }, [lastMessageContent, scrollToBottom]);
 
-  const copyToClipboard = async (content: string, index: number) => {
-    try {
-      await navigator.clipboard.writeText(content);
-      setCopiedIndex(index);
-      setTimeout(() => setCopiedIndex(null), 2000);
-    } catch {
-      // Clipboard API failed - silently ignore
-    }
-  };
+  const messageCopyController = useMemo(() => new MessageCopyController({
+    onCopied: setCopiedIndex,
+    resetDelayMs: 2000
+  }), []);
+
+  const handleCopyMessage = useCallback((content: string, index: number) => {
+    messageCopyController.copyMessage(content, index);
+  }, [messageCopyController]);
 
   const handleRegenerate = (index: number) => {
     if (onRegenerate) {
@@ -190,7 +190,9 @@ export default function Messages({ messages, onRegenerate }: MessagesProps) {
               msg.role === "assistant"
                 ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl rounded-tl-sm"
                 : "bg-blue-600 text-white rounded-xl rounded-tr-sm"
-            } px-3 py-2 shadow-sm border border-gray-200 dark:border-gray-600 transition-colors duration-200`}>
+            } px-3 py-2 shadow-sm border border-gray-200 dark:border-gray-600 transition-colors duration-200 ${
+              msg.role === "user" ? "pr-7 pb-6" : ""
+            }`}>
               {msg.role === "assistant" ? (
                 <>
                   <ReactMarkdown
@@ -205,7 +207,7 @@ export default function Messages({ messages, onRegenerate }: MessagesProps) {
                     <div className="flex gap-1.5">
                       {/* Copy Button */}
                       <button
-                        onClick={() => copyToClipboard(msg.content, index)}
+                        onClick={() => handleCopyMessage(msg.content, index)}
                         className="p-1.5 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
                         title="Copy to clipboard"
                       >
@@ -237,7 +239,26 @@ export default function Messages({ messages, onRegenerate }: MessagesProps) {
                   </div>
                 </>
               ) : (
-                <p className="text-sm text-white">{msg.content}</p>
+                <>
+                  <p className="text-sm text-white">{msg.content}</p>
+                  <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-80 transition-opacity duration-300">
+                    <button
+                      onClick={() => handleCopyMessage(msg.content, index)}
+                      className="p-1.5 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95"
+                      title="Copy prompt"
+                    >
+                      {copiedIndex === index ? (
+                        <svg className="w-3.5 h-3.5 text-green-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3.5 h-3.5 text-white/80 hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </>
               )}
             </div>
 
