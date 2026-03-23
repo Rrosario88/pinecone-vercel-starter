@@ -97,7 +97,7 @@ export class PineconeIndexSpecification {
     if (!allowed.has(normalized)) {
       throw new Error(`Invalid Pinecone metric "${metric}". Use cosine, dotproduct, or euclidean.`);
     }
-    return normalized;
+    return normalized as 'cosine' | 'dotproduct' | 'euclidean';
   }
 }
 
