@@ -11,7 +11,7 @@ type PineconeIndexSpecOptions = {
 type PineconeCreateIndexRequest = {
   name: string;
   dimension: number;
-  metric: string;
+  metric: 'cosine' | 'dotproduct' | 'euclidean';
   waitUntilReady: boolean;
   spec: {
     serverless: {
@@ -25,7 +25,7 @@ export class PineconeIndexSpecification {
   private readonly indexName: string;
   private readonly cloudName: ServerlessSpecCloudEnum;
   private readonly regionName: string;
-  private readonly metric: string;
+  private readonly metric: 'cosine' | 'dotproduct' | 'euclidean';
   private readonly embeddingModel: string;
   private readonly embeddingDimension: number;
 
