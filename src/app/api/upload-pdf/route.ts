@@ -75,7 +75,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Create uploads directory if it doesn't exist
-    const uploadsDir = path.join(process.cwd(), 'uploads', 'pdfs');
+    // Vercel serverless: only /tmp is writable
+    const uploadsDir = path.join('/tmp', 'uploads', 'pdfs');
     await fs.ensureDir(uploadsDir);
 
     // Save the file with sanitized filename to prevent path traversal
@@ -155,7 +156,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   try {
-    const uploadsDir = path.join(process.cwd(), 'uploads', 'pdfs');
+    const uploadsDir = path.join('/tmp', 'uploads', 'pdfs');
     
     // Ensure directory exists
     await fs.ensureDir(uploadsDir);
@@ -209,7 +210,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Invalid filename' }, { status: 400 });
     }
 
-    const uploadsDir = path.join(process.cwd(), 'uploads', 'pdfs');
+    const uploadsDir = path.join('/tmp', 'uploads', 'pdfs');
     const filePath = path.join(uploadsDir, sanitizedFilename);
 
     // Validate path is within uploads directory (defense in depth)
