@@ -1,11 +1,13 @@
 /** @type {import('next').NextConfig} */
+const isDocker = process.env.DOCKER_BUILD === 'true';
+
 const nextConfig = {
-  // Enable standalone output for Docker
-  output: 'standalone',
-  
-  // Configure image optimization for containers
+  // standalone output only for Docker/self-hosted; Vercel manages its own output
+  ...(isDocker && { output: 'standalone' }),
+
   images: {
-    unoptimized: true, // Disable Next.js image optimization in containers
+    // Disable image optimization in containers; allow Vercel to optimize normally
+    unoptimized: isDocker,
   },
 
   // Webpack configuration for Pinecone SDK v6 compatibility
