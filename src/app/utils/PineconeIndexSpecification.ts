@@ -91,7 +91,7 @@ export class PineconeIndexSpecification {
   }
 
   static normalizeMetric(metric?: string): 'cosine' | 'dotproduct' | 'euclidean' {
-    if (!metric) return '';
+    if (!metric) return 'cosine';
     const normalized = metric.toLowerCase();
     const allowed = new Set(['cosine', 'dotproduct', 'euclidean']);
     if (!allowed.has(normalized)) {
