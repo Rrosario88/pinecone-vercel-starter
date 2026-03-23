@@ -1,11 +1,11 @@
-import { getEmbeddings } from "@/app/utils/embeddings";
+import { getEmbeddings } from "@/utils/embeddings";
 import { Document, MarkdownTextSplitter, RecursiveCharacterTextSplitter } from "@pinecone-database/doc-splitter";
 import { Pinecone, PineconeRecord, ServerlessSpecCloudEnum } from "@pinecone-database/pinecone";
-import { chunkedUpsert } from '@/app/utils/chunkedUpsert'
+import { chunkedUpsert } from '@/utils/chunkedUpsert'
 import md5 from "md5";
 import { Crawler, Page } from "./crawler";
-import { truncateStringByBytes } from "@/app/utils/truncateString"
-import { PineconeIndexSpecification } from '@/app/utils/PineconeIndexSpecification';
+import { truncateStringByBytes } from "@/utils/truncateString"
+import { PineconeIndexSpecification } from '@/utils/PineconeIndexSpecification';
 
 interface SeedOptions {
   splittingMethod: string
